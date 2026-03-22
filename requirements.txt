@@ -14,7 +14,7 @@ anthropic==0.7.7
 python-jose[cryptography]==3.3.0
  
 # Database (Supabase)
-supabase==2.3.0
+supabase==2.8.1
  
 # Email (Resend)
 resend==0.7.0
