@@ -1,24 +1,9 @@
-# AirGO Backend Dependencies - FIXED VERSION
- 
 fastapi==0.104.1
-uvicorn==0.24.0
+uvicorn[standard]==0.24.0
+anthropic>=0.39.0
+requests==2.31.0
 pydantic==2.5.0
- 
-# HTTP client - FIXED to work with both anthropic and supabase
-httpx==0.24.1
- 
-# Anthropic AI
-anthropic==0.7.7
- 
-# Authentication (Clerk JWT verification)
-python-jose[cryptography]==3.3.0
- 
-# Database (Supabase)
-supabase==2.8.1
- 
-# Email (Resend)
-resend==0.7.0
- 
-# Environment variables
-python-dotenv==1.0.0
- 
+httpx==0.25.2
+supabase>=2.0.0
+resend>=0.7.0
+python-jose[cryptography]>=3.3.0
