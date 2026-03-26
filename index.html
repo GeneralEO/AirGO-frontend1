@@ -1,0 +1,1834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIRGO - Y2K Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Orbitron', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0e27;
+            background-image: 
+                radial-gradient(ellipse at 50% 0%, rgba(102, 126, 234, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(118, 75, 162, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse at 20% 80%, rgba(0, 201, 167, 0.2) 0%, transparent 50%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Background Orbs */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: float 15s ease-in-out infinite;
+            z-index: 0;
+            pointer-events: none; /* Don't block clicks! */
+        }
+
+        .orb-1 {
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 250px;
+            height: 250px;
+            background: linear-gradient(135deg, #00c9a7, #06d6a0);
+            bottom: -80px;
+            right: -80px;
+            animation-delay: 5s;
+        }
+
+        .orb-3 {
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(135deg, #ff6b9d, #c471ed);
+            top: 40%;
+            right: 10%;
+            animation-delay: 10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        /* ========== SIDEBAR NAVIGATION ========== */
+        .sidebar {
+            position: fixed;
+            left: -280px;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: linear-gradient(180deg,
+                rgba(10, 14, 39, 0.98) 0%,
+                rgba(20, 25, 60, 0.98) 100%
+            );
+            backdrop-filter: blur(20px);
+            border-right: 2px solid rgba(0, 201, 167, 0.4);
+            box-shadow: 8px 0 40px rgba(0, 0, 0, 0.6);
+            transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 2000;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        .sidebar.active {
+            left: 0;
+        }
+
+        .sidebar-logo {
+            padding: 20px 25px;
+            border-bottom: 1px solid rgba(0, 201, 167, 0.2);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-logo-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00c9a7, #667eea);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 4px 15px rgba(0, 201, 167, 0.5);
+        }
+
+        .sidebar-logo-text {
+            font-size: 22px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00c9a7, #667eea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-nav {
+            padding: 0 15px;
+        }
+
+        .sidebar-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 16px 20px;
+            margin-bottom: 8px;
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .sidebar-nav-item:hover {
+            background: rgba(0, 201, 167, 0.1);
+            border-color: rgba(0, 201, 167, 0.3);
+            color: #00c9a7;
+        }
+
+        .sidebar-nav-item.active {
+            background: linear-gradient(135deg,
+                rgba(0, 201, 167, 0.2) 0%,
+                rgba(102, 126, 234, 0.1) 100%
+            );
+            border-color: #00c9a7;
+            color: #00c9a7;
+            box-shadow: 0 4px 15px rgba(0, 201, 167, 0.3);
+        }
+
+        .sidebar-nav-icon {
+            font-size: 22px;
+            width: 28px;
+            text-align: center;
+        }
+
+        .sidebar-close {
+            padding: 15px 25px;
+            margin-top: 20px;
+            border-top: 1px solid rgba(0, 201, 167, 0.2);
+            text-align: center;
+        }
+
+        .close-sidebar-btn {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .close-sidebar-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(0, 201, 167, 0.4);
+            color: #00c9a7;
+        }
+
+        /* Sidebar Overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* ========== HEADER ========== */
+        .header {
+            position: relative;
+            z-index: 10;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .hamburger-menu {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg,
+                rgba(0, 201, 167, 0.2) 0%,
+                rgba(102, 126, 234, 0.1) 100%
+            );
+            border: 2px solid rgba(0, 201, 167, 0.4);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .hamburger-menu:hover {
+            background: rgba(0, 201, 167, 0.3);
+            border-color: #00c9a7;
+            box-shadow: 0 4px 15px rgba(0, 201, 167, 0.4);
+        }
+
+        .hamburger-line {
+            width: 22px;
+            height: 3px;
+            background: #00c9a7;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.1) 0%,
+                rgba(255, 255, 255, 0.05) 100%
+            );
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 12px 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-logo-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #00c9a7 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.6);
+        }
+
+        .header-logo-text {
+            font-size: 20px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00c9a7, #667eea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
+
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            padding-bottom: 120px;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 95%;
+            margin: 0 auto;
+        }
+
+        /* Chat Area */
+        .chat-area {
+            min-height: 500px;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+            padding: 30px;
+            padding-bottom: 20px;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+            animation: slideIn 0.4s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .message.assistant .message-avatar {
+            background: linear-gradient(135deg, #00c9a7, #06d6a0);
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 20px 24px;
+            border-radius: 20px;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+
+        .message.assistant .message-content {
+            background: linear-gradient(135deg,
+                rgba(0, 201, 167, 0.1) 0%,
+                rgba(6, 214, 160, 0.05) 100%
+            );
+            border: 1px solid rgba(0, 201, 167, 0.3);
+            color: #e0f2f1;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg,
+                rgba(102, 126, 234, 0.2) 0%,
+                rgba(118, 75, 162, 0.1) 100%
+            );
+            border: 1px solid rgba(102, 126, 234, 0.4);
+            color: #e8eaf6;
+        }
+
+        /* Bottom Input */
+        .search-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: linear-gradient(135deg,
+                rgba(10, 14, 39, 0.98) 0%,
+                rgba(20, 25, 60, 0.98) 100%
+            );
+            backdrop-filter: blur(20px);
+            border-top: 2px solid rgba(0, 201, 167, 0.3);
+            z-index: 100;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .search-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 18px 120px 18px 25px;
+            background: linear-gradient(135deg,
+                rgba(10, 14, 39, 0.8) 0%,
+                rgba(20, 25, 60, 0.8) 100%
+            );
+            border: 2px solid rgba(0, 201, 167, 0.4);
+            border-radius: 50px;
+            color: white;
+            font-size: 16px;
+            font-family: 'Orbitron', sans-serif;
+            outline: none;
+            resize: none;
+            overflow-y: hidden;
+            min-height: 56px;
+            max-height: 200px;
+            line-height: 1.5;
+        }
+
+        .search-bar:focus {
+            border-color: #00c9a7;
+            box-shadow: 0 8px 30px rgba(0, 201, 167, 0.6);
+        }
+
+        .input-buttons {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 8px;
+        }
+
+        .voice-icon,
+        .send-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .voice-icon {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .voice-icon:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .send-icon {
+            background: linear-gradient(135deg, #00c9a7, #06d6a0);
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .send-icon.active {
+            opacity: 1;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 201, 167, 0.5);
+        }
+
+        .send-icon.active:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 201, 167, 0.7);
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px;
+            }
+
+            .header-logo {
+                padding: 10px 15px;
+            }
+
+            .header-logo-icon {
+                width: 32px;
+                height: 32px;
+                font-size: 18px;
+            }
+
+            .header-logo-text {
+                font-size: 18px;
+            }
+
+            .chat-area {
+                padding: 15px;
+                max-height: calc(100vh - 180px);
+            }
+
+            .message-content {
+                max-width: 80%;
+                padding: 14px 16px;
+                font-size: 14px;
+            }
+
+            .message-avatar {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+            }
+
+            .search-container {
+                padding: 15px;
+            }
+
+            .search-bar {
+                padding: 14px 100px 14px 16px;
+                font-size: 15px;
+            }
+
+            .voice-icon,
+            .send-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+
+            .sidebar {
+                width: 280px;
+            }
+        }
+
+        /* Desktop - sidebar always visible option */
+        @media (min-width: 1200px) {
+            /* Uncomment to make sidebar always visible on desktop */
+            /*
+            .sidebar {
+                left: 0;
+            }
+            .main-content {
+                margin-left: 280px;
+            }
+            .hamburger-menu {
+                display: none;
+            }
+            */
+        }
+
+        .chat-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-area::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #00c9a7, #667eea);
+            border-radius: 10px;
+        }
+        
+    </style>
+<style>
+    /* Flight Cards */
+.flight-card {
+    background: linear-gradient(135deg,
+        rgba(10, 14, 39, 0.9) 0%,
+        rgba(20, 25, 60, 0.9) 100%
+    );
+    border: 2px solid rgba(0, 201, 167, 0.3);
+    border-radius: 20px;
+    padding: 20px;
+    margin: 12px 0;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.flight-card:hover {
+    transform: translateY(-5px);
+    border-color: #00c9a7;
+    box-shadow: 0 15px 40px rgba(0, 201, 167, 0.4);
+}
+
+.flight-airline {
+    font-size: 18px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #00c9a7, #667eea);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.flight-route {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 15px 0;
+}
+
+.flight-city {
+    font-size: 22px;
+    font-weight: 900;
+    color: #fff;
+}
+
+.flight-arrow {
+    font-size: 24px;
+    color: #00c9a7;
+}
+
+.flight-price {
+    font-size: 28px;
+    font-weight: 900;
+    color: #00c9a7;
+}
+
+.book-button {
+    width: 100%;
+    padding: 16px;
+    margin-top: 15px;
+    border: none;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #00c9a7, #06d6a0);
+    color: #0a0e27;
+    font-size: 16px;
+    font-weight: 900;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-family: 'Orbitron', sans-serif;
+    box-shadow: 0 8px 25px rgba(0, 201, 167, 0.5);
+    transition: all 0.3s ease;
+}
+
+.book-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(0, 201, 167, 0.7);
+}
+        /* Chat History Panel */
+        .history-panel {
+            position: fixed;
+            right: -450px;
+            top: 0;
+            width: 450px;
+            height: 100vh;
+            background: linear-gradient(135deg,
+                rgba(10, 14, 39, 0.98) 0%,
+                rgba(20, 25, 60, 0.98) 100%
+            );
+            backdrop-filter: blur(20px);
+            border-left: 2px solid rgba(0, 201, 167, 0.4);
+            box-shadow: -8px 0 40px rgba(0, 0, 0, 0.5);
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .history-panel.active {
+            right: 0;
+        }
+
+        .history-header {
+            padding: 30px;
+            border-bottom: 2px solid rgba(0, 201, 167, 0.3);
+            background: linear-gradient(135deg,
+                rgba(0, 201, 167, 0.1) 0%,
+                rgba(102, 126, 234, 0.05) 100%
+            );
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-header h3 {
+            font-size: 22px;
+            color: #00c9a7;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .close-history {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 28px;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.7);
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-weight: 300;
+        }
+
+        .close-history:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(0, 201, 167, 0.5);
+            color: #00c9a7;
+            transform: rotate(90deg);
+        }
+
+        .history-search {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .history-search-input {
+            width: 100%;
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 201, 167, 0.3);
+            border-radius: 50px;
+            color: white;
+            font-size: 14px;
+            font-family: 'Orbitron', sans-serif;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .history-search-input:focus {
+            border-color: #00c9a7;
+            box-shadow: 0 0 15px rgba(0, 201, 167, 0.3);
+        }
+
+        .history-search-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .history-item {
+            padding: 18px;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg,
+                rgba(0, 201, 167, 0.08) 0%,
+                rgba(102, 126, 234, 0.05) 100%
+            );
+            border: 1px solid rgba(0, 201, 167, 0.2);
+            border-left: 4px solid #00c9a7;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .history-item:hover {
+            background: linear-gradient(135deg,
+                rgba(0, 201, 167, 0.15) 0%,
+                rgba(102, 126, 234, 0.1) 100%
+            );
+            border-color: #00c9a7;
+            transform: translateX(-6px);
+            box-shadow: 0 6px 20px rgba(0, 201, 167, 0.3);
+        }
+
+        .history-time {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .history-preview {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .history-badge {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            background: linear-gradient(135deg, #00c9a7, #06d6a0);
+            color: #0a0e27;
+            font-size: 10px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(0, 201, 167, 0.4);
+        }
+
+        .history-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .history-tag {
+            font-size: 10px;
+            padding: 4px 10px;
+            background: rgba(102, 126, 234, 0.2);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .no-history {
+            text-align: center;
+            padding: 80px 20px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .no-history-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 20px rgba(0, 201, 167, 0.3));
+        }
+
+        .no-history h4 {
+            font-size: 18px;
+            color: #00c9a7;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .no-history p {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .history-actions {
+            padding: 20px;
+            border-top: 2px solid rgba(0, 201, 167, 0.3);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .clear-history-btn {
+            width: 100%;
+            padding: 14px;
+            background: rgba(255, 59, 48, 0.1);
+            border: 1px solid rgba(255, 59, 48, 0.3);
+            border-radius: 50px;
+            color: #ff3b30;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .clear-history-btn:hover {
+            background: rgba(255, 59, 48, 0.2);
+            border-color: #ff3b30;
+            box-shadow: 0 4px 15px rgba(255, 59, 48, 0.3);
+        }
+
+        /* Overlay for history panel */
+        .history-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .history-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .history-panel {
+                width: 100%;
+                right: -100%;
+            }
+        }
+
+</style>
+</head>
+<body>
+    <!-- Background Orbs -->
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+        <a href="index.html" style="text-decoration:none; color:inherit;">
+            <div class="sidebar-logo">
+                <img src="airgo-logo.png" alt="AIRGO" style="height:52px; object-fit:contain; filter:drop-shadow(0 3px 15px rgba(0,201,167,0.7));">
+            </div>
+        </a>
+
+        <nav class="sidebar-nav">
+            <a href="index.html" class="sidebar-nav-item active">
+                <span class="sidebar-nav-icon">💬</span>
+                <span>Chat</span>
+            </a>
+            <a href="my-trips.html" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon">
+                    <svg width="32" height="15" viewBox="0 0 120 50" style="transform:rotate(-10deg);">
+                        <defs>
+                            <linearGradient id="concorde-nav-trips" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#764ba2"/>
+                                <stop offset="50%" style="stop-color:#667eea"/>
+                                <stop offset="100%" style="stop-color:#00c9a7"/>
+                            </linearGradient>
+                            <linearGradient id="wing-nav-trips" x1="0%" y1="100%" x2="0%" y2="0%">
+                                <stop offset="0%" style="stop-color:#00c9a7" stop-opacity="0.9"/>
+                                <stop offset="100%" style="stop-color:#667eea" stop-opacity="0.5"/>
+                            </linearGradient>
+                        </defs>
+                        <!-- Fuselage -->
+                        <ellipse cx="60" cy="25" rx="58" ry="4" fill="url(#concorde-nav-trips)" stroke="#00c9a7" stroke-width="0.8"/>
+                        <!-- Pointed nose -->
+                        <path d="M 118,25 L 120,25 L 118.5,26 Z" fill="#00c9a7"/>
+                        <!-- Droop nose -->
+                        <line x1="110" y1="25" x2="118" y2="25" stroke="#00c9a7" stroke-width="1" opacity="0.8"/>
+                        <!-- Delta wing -->
+                        <path d="M 20,25 L 5,10 L 60,24 L 60,26 L 5,40 Z" 
+                              fill="url(#wing-nav-trips)" 
+                              stroke="#00c9a7" 
+                              stroke-width="0.5" 
+                              opacity="0.85"/>
+                        <!-- Tail fin -->
+                        <path d="M 8,25 L 4,15 L 12,25 Z" fill="url(#concorde-nav-trips)"/>
+                        <!-- Cockpit -->
+                        <rect x="100" y="23" width="12" height="4" rx="2" fill="#667eea" opacity="0.3"/>
+                        <!-- Engine glow -->
+                        <ellipse cx="15" cy="25" rx="3" ry="2" fill="#ff6b9d" opacity="0.5"/>
+                    </svg>
+                </span>
+                <span>My Trips</span>
+            </a>
+            <a href="#" class="sidebar-nav-item" onclick="toggleSidebar(); setTimeout(toggleChatHistory, 400); return false;">
+                <span class="sidebar-nav-icon">📜</span>
+                <span>History</span>
+            </a>
+            <a href="settings-y2k.html" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon">⚙️</span>
+                <span>Settings</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-close">
+            <button class="close-sidebar-btn" onclick="toggleSidebar()">
+                <svg width="20" height="20" viewBox="0 0 20 20" style="display:inline-block; margin-right:8px; vertical-align:middle;">
+                    <path d="M15 10 L5 10 M8 6 L4 10 L8 14" stroke="#00c9a7" stroke-width="2" fill="none" stroke-linecap="round"/>
+                </svg>
+                Back
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header with Hamburger -->
+        <div class="header">
+            <div class="hamburger-menu" id="hamburgerMenu" onclick="toggleSidebar()">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </div>
+
+            <div class="header-logo">
+                <img src="airgo-logo.png" alt="AIRGO" style="height:52px; object-fit:contain; filter:drop-shadow(0 3px 15px rgba(0,201,167,0.7));">
+            </div>
+        </div>
+
+        <!-- Chat Container -->
+        <div class="container">
+            <!-- Chat Area -->
+            <div class="chat-area" id="chatArea">
+                <div class="message assistant">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">
+                        Welcome to AIRGO! ✨
+                        
+                        Where would you like to fly today?
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Input Bar -->
+    <div class="search-container">
+        <div class="search-inner">
+            <textarea 
+                class="search-bar" 
+                placeholder="Ask anything about flights..."
+                id="messageInput"
+                rows="1"
+            ></textarea>
+            <div class="input-buttons">
+                <div class="voice-icon" id="voiceButton">🎤</div>
+                <div class="send-icon" id="sendButton">→</div>
+            </div>
+        </div>
+    </div>
+     <!-- History Panel Overlay -->
+    <div class="history-overlay" id="historyOverlay" onclick="toggleChatHistory()"></div>
+
+    <!-- Chat History Panel -->
+    <div id="historyPanel" class="history-panel">
+        <div class="history-header">
+            <h3>📜 FLIGHT LOG</h3>
+            <button class="close-history" onclick="toggleChatHistory()">×</button>
+        </div>
+
+        <div class="history-search">
+            <input 
+                type="text" 
+                class="history-search-input" 
+                placeholder="Search conversations..."
+                id="historySearch"
+                oninput="filterHistory(this.value)"
+            >
+        </div>
+
+        <div class="history-list" id="historyList">
+            <!-- History items will be inserted here -->
+        </div>
+
+        <div class="history-actions">
+            <button onclick="clearHistory()" class="clear-history-btn">
+                🗑️ Clear All History
+            </button>
+        </div>
+    </div>
+
+   <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            }
+        }
+document.addEventListener("DOMContentLoaded", () => {
+        const API_ENDPOINT = 'https://airgo-backend1.onrender.com/api/chat';
+        
+        const chatArea = document.getElementById('chatArea');
+        const messageInput = document.getElementById('messageInput');
+        let conversationHistory = [];
+
+        // Chat History System
+        let chatSessions = [];
+
+        // Load chat sessions from localStorage
+        function loadChatSessions() {
+            const saved = localStorage.getItem('airgo_chat_sessions');
+            chatSessions = saved ? JSON.parse(saved) : [];
+        }
+
+        // Save current chat session
+        function saveCurrentSession() {
+            if (conversationHistory.length === 0) return;
+
+            // Extract route info for better categorization
+            let routeInfo = "";
+            let tags = [];
+            
+            for (const msg of conversationHistory) {
+                const content = msg.content.toLowerCase();
+                if (content.includes('lagos') || content.includes('los')) {
+                    if (!tags.includes('lagos')) tags.push('lagos');
+                }
+                if (content.includes('abuja') || content.includes('abv')) {
+                    if (!tags.includes('abuja')) tags.push('abuja');
+                }
+                if (content.includes('book')) {
+                    if (!tags.includes('booking')) tags.push('booking');
+                }
+            }
+
+            const session = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                messages: [...conversationHistory],
+                preview: conversationHistory[0]?.content?.substring(0, 80) || 'New conversation',
+                messageCount: conversationHistory.length,
+                tags: tags
+            };
+
+            chatSessions.unshift(session); // Add to beginning
+            
+            // Keep only last 50 sessions
+            if (chatSessions.length > 50) {
+                chatSessions = chatSessions.slice(0, 50);
+            }
+
+            localStorage.setItem('airgo_chat_sessions', JSON.stringify(chatSessions));
+        }
+
+        // Toggle chat history panel
+        function toggleChatHistory() {
+            const panel = document.getElementById('historyPanel');
+            const overlay = document.getElementById('historyOverlay');
+            
+            const isActive = panel.classList.contains('active');
+            
+            if (isActive) {
+                panel.classList.remove('active');
+                overlay.classList.remove('active');
+            } else {
+                // Save current session before opening
+                if (conversationHistory.length > 0) {
+                    saveCurrentSession();
+                }
+                loadChatSessions();
+                renderHistoryList();
+                panel.classList.add('active');
+                overlay.classList.add('active');
+            }
+        }
+
+        // Render history list
+        function renderHistoryList(filtered = null) {
+            const listContainer = document.getElementById('historyList');
+            const sessionsToShow = filtered || chatSessions;
+            
+            if (sessionsToShow.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="no-history">
+                        <div class="no-history-icon">✈️</div>
+                        <h4>NO FLIGHT LOGS</h4>
+                        <p>Your conversation history will appear here</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listContainer.innerHTML = sessionsToShow.map((session, index) => {
+                const date = new Date(session.timestamp);
+                const isToday = date.toDateString() === new Date().toDateString();
+                const isYesterday = date.toDateString() === new Date(Date.now() - 86400000).toDateString();
+                
+                let timeStr;
+                if (isToday) {
+                    timeStr = '🕐 TODAY ' + date.toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
+                } else if (isYesterday) {
+                    timeStr = '📅 YESTERDAY ' + date.toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
+                } else {
+                    timeStr = '📆 ' + date.toLocaleDateString('en-NG', { month: 'short', day: 'numeric' });
+                }
+                
+                const messageCount = session.messageCount || session.messages.length;
+                const tags = session.tags || [];
+                
+                return `
+                    <div class="history-item" onclick="loadSession(${chatSessions.indexOf(session)})">
+                        <div class="history-time">${timeStr}</div>
+                        <div class="history-preview">${session.preview}</div>
+                        ${tags.length > 0 ? `
+                            <div class="history-tags">
+                                ${tags.slice(0, 3).map(tag => `<span class="history-tag">${tag}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                        <div class="history-badge">${messageCount} MSGS</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Filter history
+        function filterHistory(searchTerm) {
+            if (!searchTerm.trim()) {
+                renderHistoryList();
+                return;
+            }
+
+            const filtered = chatSessions.filter(session => {
+                const preview = session.preview.toLowerCase();
+                const tags = (session.tags || []).join(' ').toLowerCase();
+                const search = searchTerm.toLowerCase();
+                return preview.includes(search) || tags.includes(search);
+            });
+
+            renderHistoryList(filtered);
+        }
+
+        // Load a specific session
+        function loadSession(index) {
+            const session = chatSessions[index];
+            if (!session) return;
+
+            // Save current session first if not empty
+            if (conversationHistory.length > 0 && 
+                JSON.stringify(conversationHistory) !== JSON.stringify(session.messages)) {
+                saveCurrentSession();
+            }
+
+            // Clear current chat
+            chatArea.innerHTML = '';
+            
+            // Load session messages
+            conversationHistory = [...session.messages];
+            
+            // Display all messages
+            session.messages.forEach(msg => {
+                addMessage(msg.content, msg.role === 'user', false);
+            });
+
+            // Close history panel
+            toggleChatHistory();
+        }
+
+        // Clear all history
+        function clearHistory() {
+            if (confirm('⚠️ CLEAR ALL FLIGHT LOGS?\n\nThis will permanently delete all conversation history. This action cannot be undone.')) {
+                chatSessions = [];
+                localStorage.removeItem('airgo_chat_sessions');
+                renderHistoryList();
+            }
+        }
+
+        // Auto-save session every 30 seconds
+        setInterval(() => {
+            if (conversationHistory.length > 0) {
+                saveCurrentSession();
+            }
+        }, 30000);
+
+        // Initialize
+        loadChatSessions();
+
+
+        let bookingInProgress = false;
+        let bookingLock = false;
+        let currentBooking = null;
+       
+
+        // ========== FLIGHT CARD FUNCTIONS (WITH FIX) ==========
+        
+        // Parse flight cards from AI response
+        function parseFlightCards(text) {
+            // Remove markdown bold that breaks parsing
+            const cleanText = text.replace(/\*\*/g, '');
+            
+            const flightPattern = /Option \d+:.*?(?=Option \d+:|$)/gs;
+            const flights = cleanText.match(flightPattern);
+            
+            if (!flights || flights.length === 0) return null;
+
+            const flightCards = flights.map(flight => {
+                const airlineMatch = flight.match(/Option \d+:\s*(.+?)\s*\((.+?)\)/);
+                const routeMatch = flight.match(/([A-Z]{3})\s*→\s*([A-Z]{3})/);
+                const timeMatch = flight.match(/Departs:\s*(.+?)\s*\|\s*Arrives:\s*(.+?)(?:\n|Duration)/);
+                const durationMatch = flight.match(/Duration:\s*(.+?)(?:\n|Price)/);
+                const priceMatch = flight.match(/Price:\s*(₦[\d,]+(?:\.\d{2})?)/);
+                const seatsMatch = flight.match(/(\d+)\s*seats?\s*(?:left|available)/);
+
+                if (!airlineMatch || !priceMatch) return null;
+
+                return {
+                    airline: airlineMatch[1].trim(),
+                    flightNumber: airlineMatch[2].trim(),
+                    origin: routeMatch ? routeMatch[1] : '',
+                    destination: routeMatch ? routeMatch[2] : '',
+                    departTime: timeMatch ? timeMatch[1].trim() : '',
+                    arriveTime: timeMatch ? timeMatch[2].trim() : '',
+                    duration: durationMatch ? durationMatch[1].trim() : '',
+                    price: priceMatch[1],
+                    seats: seatsMatch ? seatsMatch[1] : null
+                };
+            }).filter(card => card !== null);
+
+            return flightCards.length > 0 ? flightCards : null;
+        }
+
+        // Create flight card HTML (FIXED VERSION)
+        function createFlightCard(flight) {
+            // Store flight data globally to avoid onclick syntax errors
+            const flightId = 'flight_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            window[flightId] = flight;
+            
+            return `
+                <div class="flight-card">
+                    <div class="flight-airline">${flight.airline} (${flight.flightNumber})</div>
+                    
+                    <div class="flight-route">
+                        <div>
+                            <div class="flight-city">${flight.origin}</div>
+                            <div class="flight-time">${flight.departTime}</div>
+                        </div>
+                        <div class="flight-arrow">✈️</div>
+                        <div>
+                            <div class="flight-city">${flight.destination}</div>
+                            <div class="flight-time">${flight.arriveTime}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="font-size: 14px; color: rgba(255,255,255,0.7); margin: 12px 0;">
+                        ⏱️ ${flight.duration}
+                        ${flight.seats ? `| 💺 ${flight.seats} seats left` : ''}
+                    </div>
+                    
+                    <div class="flight-price">${flight.price}</div>
+                    
+                    <button class="book-button" onclick="bookFlightById('${flightId}')"> 
+                        BOOK THIS FLIGHT
+                    </button>
+                </div>
+            `;
+        }
+
+        // Safe book flight by ID
+        function bookFlightById(flightId) {
+            const flight = window[flightId];
+            if (flight) {
+                bookFlight(flight);
+            } else {
+                addMessage('That flight isn\'t loading right now. Please search again and I\'ll find it for you!');
+            }
+        }
+
+        // Add message
+        function addMessage(content, isUser = false) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
+    
+    let messageContent = content;
+    
+    // Parse flight cards if assistant message
+    if (!isUser) {
+        const flights = parseFlightCards(content);
+        
+        if (flights) {
+            const textBefore = content.split(/Option 1:/)[0].trim();
+            messageContent = textBefore ? `<p>${textBefore}</p>` : '';
+            messageContent += flights.map(createFlightCard).join('');
+        } else {
+            messageContent = content.replace(/\n/g, '<br>');
+        }
+    } else {
+        messageContent = content.replace(/\n/g, '<br>');
+    }
+    
+    messageDiv.innerHTML = `
+        <div class="message-avatar">${isUser ? '👤' : '🤖'}</div>
+        <div class="message-content">${messageContent}</div>
+    `;
+            
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+
+            conversationHistory.push({
+                role: isUser ? 'user' : 'assistant',
+                content: content
+            });
+        }
+
+        // Book flight with lock protection and date capture
+        function bookFlight(flight) {
+            // Prevent duplicate clicks
+            if (bookingLock) {
+                addMessage("Hold on, I'm still working on your last request...");
+                return;
+            }
+            bookingLock = true;
+            setTimeout(() => { bookingLock = false; }, 2000);
+            
+            // Extract flight date naturally from conversation or use default
+            let flightDate;
+            
+            // Check if date was captured during search (stored globally)
+            if (window.lastSearchDate) {
+                flightDate = window.lastSearchDate;
+            } else {
+                // Default to 7 days from now if no date found
+                flightDate = new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0];
+            }
+            
+            // Store flight with date for booking
+            currentBooking = { 
+                flight: flight,
+                flightDate: flightDate
+            };
+            
+            addMessage(`I want to book ${flight.airline} ${flight.flightNumber} on ${flightDate}`, true);
+            setTimeout(() => {
+                addMessage(`Perfect choice! ✨\n\nTo complete your booking for ${flight.airline} ${flight.flightNumber}, I need:\n\n• Your full name (as on ID/passport)\n• Phone number\n• Email address\n• - Payment method: Type "card", "bank transfer", or "ussd"\n\nPlease provide all details in one message.`);
+            }, 500);
+        }
+
+        // Initiate payment with explicit confirmation
+        function initiatePayment() {
+            if (!currentBooking || !currentBooking.flight) {
+                addMessage("Please tap 'Book This Flight' on one of the options above first!");
+                return;
+            }
+            
+            if (bookingInProgress) {
+                alert("⚠️ BOOKING IN PROGRESS\n\nPlease wait for current booking to complete.");
+                return;
+            }
+            
+            // Check if we have all required details
+            if (!currentBooking.passengerName || !currentBooking.phone || !currentBooking.email) {
+                addMessage("I still need a few details to complete your booking:\n• Full name\n• Phone number\n• Email address");
+                return;
+            }
+            
+            // Explicit confirmation before payment
+            const confirmed = confirm(
+                `✈️ CONFIRM BOOKING\n\n` +
+                `Flight: ${currentBooking.flight.airline} ${currentBooking.flight.flightNumber}\n` +
+                `Date: ${currentBooking.flightDate}\n` +
+                `Route: ${currentBooking.flight.origin} → ${currentBooking.flight.destination}\n` +
+                `Passenger: ${currentBooking.passengerName}\n` +
+                `Price: ${currentBooking.flight.price}\n\n` +
+                `Click OK to proceed with payment.`
+            );
+            
+            if (!confirmed) {
+                addMessage("Booking cancelled. Let me know if you'd like to try again!");
+                return;
+            }
+            
+            bookingInProgress = true;
+            
+            // Extract price amount
+            const priceStr = currentBooking.flight.price.replace(/[^0-9.]/g, '');
+            const amountInKobo = Math.round(parseFloat(priceStr) * 100);
+            const bookingRef = 'AIRGO-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+
+            const handler = PaystackPop.setup({
+                key: 'pk_test_ac3e463ada188c03c07a6812ba30b5eb6e9b0d36',
+                email: currentBooking.email || 'customer@airgo.com',
+                amount: amountInKobo,
+                currency: 'NGN',
+                ref: bookingRef,
+                onClose: function() {
+                    bookingInProgress = false;
+                    addMessage('Payment cancelled. Your booking was not completed.');
+                },
+                callback: function(response) {
+                    // Save booking with flight date
+                    const bookings = JSON.parse(localStorage.getItem('airgo_bookings') || '[]');
+                    bookings.push({
+                        bookingReference: bookingRef,
+                        flightDate: currentBooking.flightDate,
+                        airline: currentBooking.flight.airline,
+                        flightNumber: currentBooking.flight.flightNumber,
+                        origin: currentBooking.flight.origin,
+                        destination: currentBooking.flight.destination,
+                        departureTime: currentBooking.flight.departTime || currentBooking.flight.departure_time,
+                        arrivalTime: currentBooking.flight.arriveTime || currentBooking.flight.arrival_time,
+                        duration: currentBooking.flight.duration,
+                        price: currentBooking.flight.price,
+                        passengerName: currentBooking.passengerName,
+                        phone: currentBooking.phone,
+                        email: currentBooking.email,
+                        flightDate: currentBooking.flightDate, // Actual flight departure date
+                        bookingDate: new Date().toISOString(), // When booking was made
+                        status: 'confirmed',
+                        paymentReference: response.reference
+                    });
+                    localStorage.setItem('airgo_bookings', JSON.stringify(bookings));
+                    
+                    bookingInProgress = false;
+                    
+                    // Redirect to success page
+                    const successUrl = `payment-success.html?ref=${bookingRef}&origin=${currentBooking.flight.origin}&destination=${currentBooking.flight.destination}&email=${currentBooking.email}&date=${currentBooking.flightDate}`;
+                    window.location.href = successUrl;
+                }
+            });
+
+            handler.openIframe();
+        }
+
+        // Extract booking details from message
+        function extractBookingDetails(message) {
+            const details = {};
+            
+            // SUPER FLEXIBLE NAME EXTRACTION - accepts ANY reasonable format
+            let name = null;
+            
+            // Pattern 1: "name is John Doe", "full name John Doe", "my name is John Doe"
+            let nameMatch = message.match(/(?:my\s+)?(?:full\s+)?name(?:\s+is)?[:\s]+([A-Za-z\s]{2,50})(?=\s*\d|\s*\+|@|card|bank|ussd|\n|$)/i);
+            if (nameMatch) {
+                name = nameMatch[1].trim();
+            }
+            
+            // Pattern 2: Just 2-4 words at the start (probably a name)
+            if (!name) {
+                const words = message.trim().split(/\s+/);
+                if (words.length >= 2 && words.length <= 4) {
+                    let potentialName = '';
+                    for (let i = 0; i < Math.min(4, words.length); i++) {
+                        if (/^[A-Za-z]+$/.test(words[i])) {
+                            potentialName += (potentialName ? ' ' : '') + words[i];
+                        } else {
+                            break; // Stop at first non-letter word
+                        }
+                    }
+                    // If we got at least 2 words that are all letters, it's a name
+                    if (potentialName.split(' ').length >= 2) {
+                        name = potentialName;
+                    }
+                }
+            }
+            
+            if (name) details.passengerName = name;
+            
+            // FLEXIBLE PHONE - just find 10-11 consecutive digits
+            const phoneMatch = message.match(/\d{10,11}/);
+            if (phoneMatch) details.phone = phoneMatch[0];
+            
+            // EMAIL - standard pattern
+            const emailMatch = message.match(/[\w\.-]+@[\w\.-]+\.\w+/);
+            if (emailMatch) details.email = emailMatch[0];
+            
+            // PAYMENT METHOD
+            if (/card|debit|credit/i.test(message)) details.paymentMethod = 'card';
+            else if (/transfer|bank/i.test(message)) details.paymentMethod = 'bank transfer';
+            else if (/ussd/i.test(message)) details.paymentMethod = 'ussd';
+ 
+            return details;
+        }
+
+        // Extract and store flight date naturally from user message
+        function extractAndStoreDateFromMessage(message) {
+            const msgLower = message.toLowerCase();
+            const today = new Date();
+            
+            // Check for "today"
+            if (msgLower.includes('today')) {
+                window.lastSearchDate = today.toISOString().split('T')[0];
+                return;
+            }
+            
+            // Check for "tomorrow"
+            if (msgLower.includes('tomorrow')) {
+                const tomorrow = new Date(today.getTime() + 24*60*60*1000);
+                window.lastSearchDate = tomorrow.toISOString().split('T')[0];
+                return;
+            }
+            
+            // Check for "next week"
+            if (msgLower.includes('next week')) {
+                const nextWeek = new Date(today.getTime() + 7*24*60*60*1000);
+                window.lastSearchDate = nextWeek.toISOString().split('T')[0];
+                return;
+            }
+            
+            // Check for specific dates like "January 15", "15th January", "15/01", "2026-01-15"
+            const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 
+                              'july', 'august', 'september', 'october', 'november', 'december'];
+            
+            // Pattern: "January 15" or "15th January"
+            for (let i = 0; i < monthNames.length; i++) {
+                const month = monthNames[i];
+                // "January 15" or "Jan 15"
+                const pattern1 = new RegExp(`${month.substr(0,3)}[a-z]*\\s+(\\d{1,2})`, 'i');
+                // "15th January" or "15 Jan"
+                const pattern2 = new RegExp(`(\\d{1,2})(?:st|nd|rd|th)?\\s+${month.substr(0,3)}`, 'i');
+                
+                let match = message.match(pattern1) || message.match(pattern2);
+                if (match) {
+                    const day = parseInt(match[1]);
+                    const year = today.getFullYear();
+                    const date = new Date(year, i, day);
+                    window.lastSearchDate = date.toISOString().split('T')[0];
+                    return;
+                }
+            }
+            
+            // Pattern: ISO date "2026-01-15"
+            const isoMatch = message.match(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/);
+            if (isoMatch) {
+                window.lastSearchDate = isoMatch[0];
+                return;
+            }
+            
+            // Pattern: DD/MM or DD/MM/YYYY
+            const dateMatch = message.match(/\b(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/);
+            if (dateMatch) {
+                const day = parseInt(dateMatch[1]);
+                const month = parseInt(dateMatch[2]) - 1; // JS months are 0-indexed
+                const year = dateMatch[3] ? (dateMatch[3].length === 2 ? 2000 + parseInt(dateMatch[3]) : parseInt(dateMatch[3])) : today.getFullYear();
+                const date = new Date(year, month, day);
+                window.lastSearchDate = date.toISOString().split('T')[0];
+                return;
+            }
+            
+            // If no date found, keep existing date or set to 7 days from now
+            if (!window.lastSearchDate) {
+                const weekFromNow = new Date(today.getTime() + 7*24*60*60*1000);
+                window.lastSearchDate = weekFromNow.toISOString().split('T')[0];
+            }
+        }
+
+        // Send message
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // Extract and store flight date from user message naturally
+            extractAndStoreDateFromMessage(message);
+
+            // Show user message in chat
+            addMessage(message, true);
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            document.getElementById('sendButton').classList.remove('active');
+
+            // Check if providing booking details
+            if (currentBooking && currentBooking.flight) {
+                const details = extractBookingDetails(message);
+                Object.assign(currentBooking, details);
+                
+                const { passengerName, phone, email, paymentMethod } = currentBooking;
+                
+                if (passengerName && phone && email && paymentMethod) {
+                    addMessage(`Perfect! I have all your details:\n\n✅ ${passengerName}\n✅ ${phone}\n✅ ${email}\n✅ ${paymentMethod}\n\nOpening secure payment...`);
+                    
+                    setTimeout(() => {
+                        const priceStr = currentBooking.flight.price.replace(/[^0-9.]/g, '');
+                        const amountInKobo = Math.round(parseFloat(priceStr) * 100);
+                        const bookingRef = 'AIRGO-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+
+                        const handler = PaystackPop.setup({
+                            key: 'pk_test_ac3e463ada188c03c07a6812ba30b5eb6e9b0d36',
+                            email: currentBooking.email,
+                            amount: amountInKobo,
+                            currency: 'NGN',
+                            ref: bookingRef,
+                            onClose: function() {
+                                addMessage('Payment cancelled. Type "book" to try again.');
+                            },
+                            callback: function(response) {
+                                const bookings = JSON.parse(localStorage.getItem('airgo_bookings') || '[]');
+                                bookings.push({
+                                    bookingReference: bookingRef,
+                                    airline: currentBooking.flight.airline,
+                                    flightNumber: currentBooking.flight.flightNumber,
+                                    origin: currentBooking.flight.origin,
+                                    destination: currentBooking.flight.destination,
+                                    price: currentBooking.flight.price,
+                                    departureTime: currentBooking.flight.departTime || currentBooking.flight.departure_time || '',
+                                    arrivalTime: currentBooking.flight.arriveTime || currentBooking.flight.arrival_time || '',
+                                    duration: currentBooking.flight.duration || '',
+                                    passengerName: currentBooking.passengerName,
+                                    phone: currentBooking.phone,
+                                    email: currentBooking.email,
+                                    flightDate: currentBooking.flightDate,
+                                    bookingDate: new Date().toISOString(),
+                                    status: 'confirmed',
+                                    paymentReference: response.reference
+                                });
+                                localStorage.setItem('airgo_bookings', JSON.stringify(bookings));
+                                
+                                window.location.href = `payment-success-y2k.html?ref=${bookingRef}`;
+                            }
+                        });
+
+                        handler.openIframe();
+                    }, 1500);
+                    
+                    return;
+                } else {
+                    const missing = [];
+                    if (!passengerName) missing.push('full name');
+                    if (!phone) missing.push('phone');
+                    if (!email) missing.push('email');
+                    if (!paymentMethod) missing.push('payment method');
+                    
+                    addMessage(`Thanks! I still need:\n\n${missing.map(m => '• ' + m).join('\n')}`);
+                    return;
+                }
+            }
+
+            // Show loading indicator
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message assistant';
+            loadingDiv.id = 'loading-message';
+            loadingDiv.innerHTML = `
+                <div class="message-avatar">🤖</div>
+                <div class="message-content">Thinking...</div>
+            `;
+            chatArea.appendChild(loadingDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+
+            // Call the backend API
+            try {
+                const res = await fetch(API_ENDPOINT, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        history: conversationHistory.slice(-10)
+                    })
+                });
+
+                const data = await res.json();
+
+                // Remove loading indicator
+                const loader = document.getElementById('loading-message');
+                if (loader) loader.remove();
+
+                // Display the AI response (never show raw errors to user)
+                if (data.response && !data.response.startsWith("Error")) {
+                    addMessage(data.response, false);
+                } else {
+                    addMessage("I ran into a hiccup there. Could you try that again?");
+                }
+
+            } catch (error) {
+                console.error("Chat error:", error);
+                // Remove loading indicator
+                const loader = document.getElementById('loading-message');
+                if (loader) loader.remove();
+                
+                addMessage("Looks like the connection dropped for a second. Please try again!");
+            }
+        }
+
+
+        // Event listeners
+        
+        // Detect if device is mobile/touch
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                        ('ontouchstart' in window) || 
+                        (navigator.maxTouchPoints > 0);
+        
+        // Enter key behavior: Desktop sends, Mobile creates newline
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                if (isMobile) {
+                    // Mobile: Enter creates newline, Shift+Enter sends
+                    if (e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                    // Otherwise allow default (newline)
+                } else {
+                    // Desktop: Enter sends, Shift+Enter creates newline
+                    if (!e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                    // Otherwise allow default (newline)
+                }
+            }
+        });
+
+        messageInput.addEventListener('input', () => {
+            const sendBtn = document.getElementById('sendButton');
+            if (messageInput.value.trim()) {
+                sendBtn.classList.add('active');
+            } else {
+                sendBtn.classList.remove('active');
+            }
+            
+            messageInput.style.height = 'auto';
+            messageInput.style.height = Math.min(messageInput.scrollHeight, 200) + 'px';
+        });
+
+        document.getElementById('sendButton').addEventListener('click', () => {
+            if (messageInput.value.trim()) {
+                sendMessage();
+            }
+        });
+
+        document.getElementById('voiceButton').addEventListener('click', () => {
+            if ('webkitSpeechRecognition' in window) {
+                const recognition = new webkitSpeechRecognition();
+                recognition.start();
+                recognition.onresult = (event) => {
+                    messageInput.value = event.results[0][0].transcript;
+                    document.getElementById('sendButton').classList.add('active');
+                    messageInput.focus();
+                };
+            }
+        });
+  
+       // Initialize
+        messageInput.focus();
+
+        // Expose functions to global scope for HTML onclick handlers
+        window.toggleChatHistory = toggleChatHistory;
+        window.filterHistory = filterHistory;
+        window.loadSession = loadSession;
+        window.clearHistory = clearHistory;
+        window.bookFlightById = bookFlightById;
+        window.bookFlight = bookFlight;
+        window.initiatePayment = initiatePayment;
+     });
+     </script>
+    
+         <!-- Paystack JS -->
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+</body>
+</html>
