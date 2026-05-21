@@ -1475,24 +1475,36 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             
             bookingInProgress = true;
-            
-            // Extract price amount
-            const priceStr = currentBooking.flight.price.replace(/[^0-9.]/g, '');
-            const amountInKobo = Math.round(parseFloat(priceStr) * 100);
+
+            const amount = parseFloat(currentBooking.flight.price.replace(/[^0-9.]/g, ''));
             const bookingRef = 'AIRGO-' + Math.random().toString(36).substr(2, 6).toUpperCase();
 
-            const handler = PaystackPop.setup({
-                key: 'pk_test_ac3e463ada188c03c07a6812ba30b5eb6e9b0d36',
-                email: currentBooking.email || 'customer@bookairgo.online',
-                amount: amountInKobo,
+            FlutterwaveCheckout({
+                public_key: 'FLWPUBK_TEST-ed00d3d20156bb856ba94c05436c4e94-X',
+                tx_ref: bookingRef,
+                amount: amount,
                 currency: 'NGN',
-                ref: bookingRef,
-                onClose: function() {
+                payment_options: 'card, ussd, banktransfer',
+                customer: {
+                    email: currentBooking.email || 'customer@bookairgo.online',
+                    phone_number: currentBooking.phone || '',
+                    name: currentBooking.passengerName || ''
+                },
+                customizations: {
+                    title: 'AIRGO Flight Booking',
+                    description: `${currentBooking.flight.airline} ${currentBooking.flight.flightNumber} — ${currentBooking.flight.origin} → ${currentBooking.flight.destination}`,
+                    logo: 'https://bookairgo.online/airgo-logo.png'
+                },
+                onclose: function() {
                     bookingInProgress = false;
                     addMessage('Payment cancelled. Your booking was not completed.');
                 },
                 callback: async function(response) {
-                    // Save to localStorage as backup
+                    if (response.status !== 'successful' && response.status !== 'completed') {
+                        bookingInProgress = false;
+                        addMessage('⚠️ Payment was not successful. Please try again.');
+                        return;
+                    }
                     const bookings = JSON.parse(localStorage.getItem('airgo_bookings') || '[]');
                     bookings.push({
                         bookingReference: bookingRef,
@@ -1510,12 +1522,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         email: currentBooking.email,
                         bookingDate: new Date().toISOString(),
                         status: 'confirmed',
-                        paymentReference: response.reference
+                        paymentReference: response.transaction_id
                     });
                     localStorage.setItem('airgo_bookings', JSON.stringify(bookings));
 
-                    // Save to backend (Supabase + confirmation email) — AWAIT so it completes before redirect
-                    const priceNum = parseFloat(currentBooking.flight.price.replace(/[^0-9.]/g, ''));
                     await saveBookingToBackend({
                         user_id: 'guest',
                         booking_reference: bookingRef,
@@ -1528,21 +1538,17 @@ document.addEventListener("DOMContentLoaded", () => {
                         passenger_name: currentBooking.passengerName || '',
                         phone: currentBooking.phone || '',
                         email: currentBooking.email || '',
-                        price: priceNum || 0,
+                        price: amount || 0,
                         currency: 'NGN',
                         payment_method: currentBooking.paymentMethod || 'card',
-                        payment_reference: response.reference
+                        payment_reference: String(response.transaction_id)
                     });
 
                     bookingInProgress = false;
-
-                    // Redirect to success page
                     const successUrl = `payment-success-y2k.html?ref=${bookingRef}&origin=${currentBooking.flight.origin}&destination=${currentBooking.flight.destination}&email=${currentBooking.email}&date=${currentBooking.flightDate}`;
                     window.location.href = successUrl;
                 }
             });
-
-            handler.openIframe();
         }
 
         // Extract booking details from message
@@ -1691,23 +1697,37 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (passengerName && phone && email && paymentMethod) {
                     addMessage(`Perfect! I have all your details:\n\n✅ ${passengerName}\n✅ ${phone}\n✅ ${email}\n✅ ${paymentMethod}\n\nOpening secure payment...`);
 
-                    // Open Paystack immediately — no setTimeout (delayed opens are blocked by browsers)
-                    const priceStr = currentBooking.flight.price.replace(/[^0-9.]/g, '');
-                    const amountInKobo = Math.round(parseFloat(priceStr) * 100);
+                    // Open Flutterwave immediately within the user gesture context
+                    const amount = parseFloat(currentBooking.flight.price.replace(/[^0-9.]/g, ''));
                     const bookingRef = 'AIRGO-' + Math.random().toString(36).substr(2, 6).toUpperCase();
                     bookingInProgress = true;
 
-                    const handler = PaystackPop.setup({
-                        key: 'pk_test_ac3e463ada188c03c07a6812ba30b5eb6e9b0d36',
-                        email: currentBooking.email,
-                        amount: amountInKobo,
+                    FlutterwaveCheckout({
+                        public_key: 'FLWPUBK_TEST-ed00d3d20156bb856ba94c05436c4e94-X',
+                        tx_ref: bookingRef,
+                        amount: amount,
                         currency: 'NGN',
-                        ref: bookingRef,
-                        onClose: function() {
+                        payment_options: 'card, ussd, banktransfer',
+                        customer: {
+                            email: currentBooking.email,
+                            phone_number: currentBooking.phone || '',
+                            name: currentBooking.passengerName || ''
+                        },
+                        customizations: {
+                            title: 'AIRGO Flight Booking',
+                            description: `${currentBooking.flight.airline} ${currentBooking.flight.flightNumber} — ${currentBooking.flight.origin} → ${currentBooking.flight.destination}`,
+                            logo: 'https://bookairgo.online/airgo-logo.png'
+                        },
+                        onclose: function() {
                             bookingInProgress = false;
                             addMessage('Payment cancelled. Type "book" to try again.');
                         },
                         callback: async function(response) {
+                            if (response.status !== 'successful' && response.status !== 'completed') {
+                                bookingInProgress = false;
+                                addMessage('⚠️ Payment was not successful. Please try again.');
+                                return;
+                            }
                             const bookings = JSON.parse(localStorage.getItem('airgo_bookings') || '[]');
                             bookings.push({
                                 bookingReference: bookingRef,
@@ -1725,11 +1745,10 @@ document.addEventListener("DOMContentLoaded", () => {
                                 flightDate: currentBooking.flightDate,
                                 bookingDate: new Date().toISOString(),
                                 status: 'confirmed',
-                                paymentReference: response.reference
+                                paymentReference: response.transaction_id
                             });
                             localStorage.setItem('airgo_bookings', JSON.stringify(bookings));
 
-                            const priceNum = parseFloat(currentBooking.flight.price.replace(/[^0-9.]/g, ''));
                             await saveBookingToBackend({
                                 user_id: 'guest',
                                 booking_reference: bookingRef,
@@ -1742,17 +1761,16 @@ document.addEventListener("DOMContentLoaded", () => {
                                 passenger_name: currentBooking.passengerName || '',
                                 phone: currentBooking.phone || '',
                                 email: currentBooking.email || '',
-                                price: priceNum || 0,
+                                price: amount || 0,
                                 currency: 'NGN',
                                 payment_method: currentBooking.paymentMethod || 'card',
-                                payment_reference: response.reference
+                                payment_reference: String(response.transaction_id)
                             });
 
+                            bookingInProgress = false;
                             window.location.href = `payment-success-y2k.html?ref=${bookingRef}`;
                         }
                     });
-
-                    handler.openIframe();
                     return;
                 } else {
                     const missing = [];
@@ -1889,7 +1907,7 @@ document.addEventListener("DOMContentLoaded", () => {
      });
      </script>
     
-         <!-- Paystack JS -->
-    <script src="https://js.paystack.co/v1/inline.js"></script>
+    <!-- Flutterwave JS -->
+    <script src="https://checkout.flutterwave.com/v3.js"></script>
 </body>
 </html>
