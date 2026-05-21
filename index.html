@@ -1474,22 +1474,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
             
-            // Explicit confirmation before payment
-            const confirmed = confirm(
-                `✈️ CONFIRM BOOKING\n\n` +
-                `Flight: ${currentBooking.flight.airline} ${currentBooking.flight.flightNumber}\n` +
-                `Date: ${currentBooking.flightDate}\n` +
-                `Route: ${currentBooking.flight.origin} → ${currentBooking.flight.destination}\n` +
-                `Passenger: ${currentBooking.passengerName}\n` +
-                `Price: ${currentBooking.flight.price}\n\n` +
-                `Click OK to proceed with payment.`
-            );
-            
-            if (!confirmed) {
-                addMessage("Booking cancelled. Let me know if you'd like to try again!");
-                return;
-            }
-            
             bookingInProgress = true;
             
             // Extract price amount
@@ -1706,71 +1690,69 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 if (passengerName && phone && email && paymentMethod) {
                     addMessage(`Perfect! I have all your details:\n\n✅ ${passengerName}\n✅ ${phone}\n✅ ${email}\n✅ ${paymentMethod}\n\nOpening secure payment...`);
-                    
-                    setTimeout(() => {
-                        const priceStr = currentBooking.flight.price.replace(/[^0-9.]/g, '');
-                        const amountInKobo = Math.round(parseFloat(priceStr) * 100);
-                        const bookingRef = 'AIRGO-' + Math.random().toString(36).substr(2, 6).toUpperCase();
 
-                        const handler = PaystackPop.setup({
-                            key: 'pk_test_ac3e463ada188c03c07a6812ba30b5eb6e9b0d36',
-                            email: currentBooking.email,
-                            amount: amountInKobo,
-                            currency: 'NGN',
-                            ref: bookingRef,
-                            onClose: function() {
-                                addMessage('Payment cancelled. Type "book" to try again.');
-                            },
-                            callback: async function(response) {
-                                // Save to localStorage as backup
-                                const bookings = JSON.parse(localStorage.getItem('airgo_bookings') || '[]');
-                                bookings.push({
-                                    bookingReference: bookingRef,
-                                    airline: currentBooking.flight.airline,
-                                    flightNumber: currentBooking.flight.flightNumber,
-                                    origin: currentBooking.flight.origin,
-                                    destination: currentBooking.flight.destination,
-                                    price: currentBooking.flight.price,
-                                    departureTime: currentBooking.flight.departTime || currentBooking.flight.departure_time || '',
-                                    arrivalTime: currentBooking.flight.arriveTime || currentBooking.flight.arrival_time || '',
-                                    duration: currentBooking.flight.duration || '',
-                                    passengerName: currentBooking.passengerName,
-                                    phone: currentBooking.phone,
-                                    email: currentBooking.email,
-                                    flightDate: currentBooking.flightDate,
-                                    bookingDate: new Date().toISOString(),
-                                    status: 'confirmed',
-                                    paymentReference: response.reference
-                                });
-                                localStorage.setItem('airgo_bookings', JSON.stringify(bookings));
+                    // Open Paystack immediately — no setTimeout (delayed opens are blocked by browsers)
+                    const priceStr = currentBooking.flight.price.replace(/[^0-9.]/g, '');
+                    const amountInKobo = Math.round(parseFloat(priceStr) * 100);
+                    const bookingRef = 'AIRGO-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+                    bookingInProgress = true;
 
-                                // AWAIT backend call so it completes before redirect
-                                const priceNum = parseFloat(currentBooking.flight.price.replace(/[^0-9.]/g, ''));
-                                await saveBookingToBackend({
-                                    user_id: 'guest',
-                                    booking_reference: bookingRef,
-                                    airline: currentBooking.flight.airline || '',
-                                    flight_number: currentBooking.flight.flightNumber || '',
-                                    origin: currentBooking.flight.origin || '',
-                                    destination: currentBooking.flight.destination || '',
-                                    departure_time: currentBooking.flight.departTime || currentBooking.flight.departure_time || '',
-                                    arrival_time: currentBooking.flight.arriveTime || currentBooking.flight.arrival_time || '',
-                                    passenger_name: currentBooking.passengerName || '',
-                                    phone: currentBooking.phone || '',
-                                    email: currentBooking.email || '',
-                                    price: priceNum || 0,
-                                    currency: 'NGN',
-                                    payment_method: currentBooking.paymentMethod || 'card',
-                                    payment_reference: response.reference
-                                });
+                    const handler = PaystackPop.setup({
+                        key: 'pk_test_ac3e463ada188c03c07a6812ba30b5eb6e9b0d36',
+                        email: currentBooking.email,
+                        amount: amountInKobo,
+                        currency: 'NGN',
+                        ref: bookingRef,
+                        onClose: function() {
+                            bookingInProgress = false;
+                            addMessage('Payment cancelled. Type "book" to try again.');
+                        },
+                        callback: async function(response) {
+                            const bookings = JSON.parse(localStorage.getItem('airgo_bookings') || '[]');
+                            bookings.push({
+                                bookingReference: bookingRef,
+                                airline: currentBooking.flight.airline,
+                                flightNumber: currentBooking.flight.flightNumber,
+                                origin: currentBooking.flight.origin,
+                                destination: currentBooking.flight.destination,
+                                price: currentBooking.flight.price,
+                                departureTime: currentBooking.flight.departTime || currentBooking.flight.departure_time || '',
+                                arrivalTime: currentBooking.flight.arriveTime || currentBooking.flight.arrival_time || '',
+                                duration: currentBooking.flight.duration || '',
+                                passengerName: currentBooking.passengerName,
+                                phone: currentBooking.phone,
+                                email: currentBooking.email,
+                                flightDate: currentBooking.flightDate,
+                                bookingDate: new Date().toISOString(),
+                                status: 'confirmed',
+                                paymentReference: response.reference
+                            });
+                            localStorage.setItem('airgo_bookings', JSON.stringify(bookings));
 
-                                window.location.href = `payment-success-y2k.html?ref=${bookingRef}`;
-                            }
-                        });
+                            const priceNum = parseFloat(currentBooking.flight.price.replace(/[^0-9.]/g, ''));
+                            await saveBookingToBackend({
+                                user_id: 'guest',
+                                booking_reference: bookingRef,
+                                airline: currentBooking.flight.airline || '',
+                                flight_number: currentBooking.flight.flightNumber || '',
+                                origin: currentBooking.flight.origin || '',
+                                destination: currentBooking.flight.destination || '',
+                                departure_time: currentBooking.flight.departTime || currentBooking.flight.departure_time || '',
+                                arrival_time: currentBooking.flight.arriveTime || currentBooking.flight.arrival_time || '',
+                                passenger_name: currentBooking.passengerName || '',
+                                phone: currentBooking.phone || '',
+                                email: currentBooking.email || '',
+                                price: priceNum || 0,
+                                currency: 'NGN',
+                                payment_method: currentBooking.paymentMethod || 'card',
+                                payment_reference: response.reference
+                            });
 
-                        handler.openIframe();
-                    }, 1500);
-                    
+                            window.location.href = `payment-success-y2k.html?ref=${bookingRef}`;
+                        }
+                    });
+
+                    handler.openIframe();
                     return;
                 } else {
                     const missing = [];
