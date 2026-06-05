@@ -56,6 +56,9 @@ AMADEUS_FLIGHT_SEARCH_URL = "https://api.amadeus.com/v2/shopping/flight-offers" 
 # Clerk
 CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY", "")
 CLERK_PUBLISHABLE_KEY = os.getenv("CLERK_PUBLISHABLE_KEY", "")
+
+# Flutterwave
+FLUTTERWAVE_SECRET_KEY = os.getenv("FLUTTERWAVE_SECRET_KEY", "")
  
 # Supabase
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -86,6 +89,8 @@ if not AMADEUS_API_KEY:
     print("WARNING: AMADEUS_API_KEY not set - using test mode")
 if not CLERK_SECRET_KEY:
     print("WARNING: CLERK_SECRET_KEY not set - auth disabled")
+if not FLUTTERWAVE_SECRET_KEY:
+    print("WARNING: FLUTTERWAVE_SECRET_KEY not set - payment verification disabled")
 if not SUPABASE_URL:
     print("WARNING: SUPABASE_URL not set - database disabled")
 if not RESEND_API_KEY:
@@ -128,6 +133,7 @@ class BookingRequest(BaseModel):
     currency: str = "NGN"
     payment_method: str
     payment_reference: str
+    flw_transaction_id: Optional[str] = None  # Flutterwave transaction_id for server verification
  
  
 # ============================================
@@ -261,6 +267,41 @@ async def save_booking_to_database(booking: BookingRequest, user_db_id: str):
         return None
  
  
+async def verify_flutterwave_payment(transaction_id: str, expected_amount: float, expected_currency: str = "NGN") -> bool:
+    """Verify a Flutterwave transaction server-side before saving the booking."""
+    if not FLUTTERWAVE_SECRET_KEY:
+        print("WARNING: Skipping Flutterwave verification — secret key not set")
+        return True  # fail-open only in dev; set the key in prod
+
+    url = f"https://api.flutterwave.com/v3/transactions/{transaction_id}/verify"
+    headers = {"Authorization": f"Bearer {FLUTTERWAVE_SECRET_KEY}"}
+
+    async with httpx.AsyncClient() as h:
+        try:
+            resp = await h.get(url, headers=headers, timeout=15.0)
+        except Exception as e:
+            print(f"Flutterwave verification request failed: {e}")
+            raise HTTPException(status_code=502, detail="Could not reach Flutterwave to verify payment")
+
+    if resp.status_code != 200:
+        print(f"Flutterwave API error {resp.status_code}: {resp.text}")
+        raise HTTPException(status_code=402, detail="Payment verification failed")
+
+    data = resp.json().get("data", {})
+    status = data.get("status", "")
+    charged_amount = float(data.get("charged_amount", 0))
+    currency = data.get("currency", "")
+
+    if status not in ("successful", "completed"):
+        raise HTTPException(status_code=402, detail=f"Payment not successful (status: {status})")
+    if currency != expected_currency:
+        raise HTTPException(status_code=402, detail=f"Currency mismatch: expected {expected_currency}, got {currency}")
+    if charged_amount < expected_amount * 0.99:  # allow 1% rounding
+        raise HTTPException(status_code=402, detail=f"Amount mismatch: expected {expected_amount}, charged {charged_amount}")
+
+    return True
+
+
 async def get_user_bookings(user_db_id: str):
     """Get all bookings for a user"""
     if not supabase:
@@ -807,6 +848,11 @@ async def create_booking(booking: BookingRequest, authorization: str = Header(No
             except:
                 pass  # Allow bookings without auth for now
         
+        # Verify Flutterwave payment server-side before persisting anything
+        txn_id = booking.flw_transaction_id or booking.payment_reference
+        if txn_id and txn_id.lstrip('-').isdigit():
+            await verify_flutterwave_payment(txn_id, booking.price, booking.currency)
+
         # Get or create user in database
         user_db_id = None
         if user_info and supabase:

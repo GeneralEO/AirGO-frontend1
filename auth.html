@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIRGO — Sign In</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --teal: #00c9a7;
+            --purple: #667eea;
+            --pink: #ff6b9d;
+            --dark: #0a0e27;
+            --card: rgba(255,255,255,0.04);
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background: var(--dark);
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ── STARFIELD ── */
+        #stars-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ── ANIMATED GRADIENT ORBS ── */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.35;
+            pointer-events: none;
+            z-index: 1;
+            animation: drift 20s ease-in-out infinite;
+        }
+        .orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, var(--purple), transparent 70%); top: -150px; left: -150px; animation-delay: 0s; }
+        .orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, var(--teal), transparent 70%);   bottom: -100px; right: -100px; animation-delay: 7s; }
+        .orb-3 { width: 300px; height: 300px; background: radial-gradient(circle, var(--pink), transparent 70%);   top: 40%; left: 60%; animation-delay: 14s; }
+
+        @keyframes drift {
+            0%,100% { transform: translate(0,0) scale(1); }
+            33%      { transform: translate(40px,-40px) scale(1.08); }
+            66%      { transform: translate(-30px,30px) scale(0.93); }
+        }
+
+        /* ── GRID OVERLAY ── */
+        .grid-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            background-image:
+                linear-gradient(rgba(0,201,167,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,201,167,0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: gridPulse 8s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes gridPulse {
+            0%,100% { opacity: 0.6; }
+            50%      { opacity: 1; }
+        }
+
+        /* ── FLIGHT PATH LINES ── */
+        .flight-path {
+            position: fixed;
+            z-index: 2;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .flight-path svg { width: 100%; height: 100%; }
+
+        /* ── MAIN CARD ── */
+        .auth-wrap {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 480px;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: linear-gradient(135deg,
+                rgba(255,255,255,0.07) 0%,
+                rgba(255,255,255,0.02) 100%
+            );
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(0,201,167,0.25);
+            border-radius: 24px;
+            padding: 44px 40px 40px;
+            box-shadow:
+                0 0 0 1px rgba(0,201,167,0.08),
+                0 40px 80px rgba(0,0,0,0.6),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+            animation: cardIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
+
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(40px) scale(0.94); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* ── LOGO ── */
+        .logo-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 32px;
+            justify-content: center;
+        }
+
+        .logo-icon {
+            width: 52px; height: 52px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--teal), var(--purple));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px;
+            box-shadow: 0 0 24px rgba(0,201,167,0.5), 0 0 60px rgba(0,201,167,0.2);
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+        @keyframes logoPulse {
+            0%,100% { box-shadow: 0 0 24px rgba(0,201,167,0.5), 0 0 60px rgba(0,201,167,0.2); }
+            50%      { box-shadow: 0 0 40px rgba(0,201,167,0.8), 0 0 80px rgba(0,201,167,0.35); }
+        }
+
+        .logo-text {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            background: linear-gradient(135deg, var(--teal) 0%, var(--purple) 60%, var(--pink) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* ── HEADLINE ── */
+        .auth-headline {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .auth-headline h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.9);
+            letter-spacing: 1.5px;
+        }
+        .auth-headline p {
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 1px;
+            margin-top: 6px;
+            font-family: sans-serif;
+        }
+
+        /* ── DIVIDER ── */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 24px 0;
+        }
+        .divider-line { flex: 1; height: 1px; background: rgba(0,201,167,0.2); }
+        .divider-text { font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 2px; }
+
+        /* ── CLERK MOUNT TARGET ── */
+        #clerk-auth {
+            min-height: 340px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Override Clerk's default card so it blends in */
+        #clerk-auth .cl-card,
+        #clerk-auth .cl-rootBox {
+            background: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        #clerk-auth .cl-formButtonPrimary {
+            background: linear-gradient(135deg, var(--teal), var(--purple)) !important;
+            font-family: 'Orbitron', sans-serif !important;
+            letter-spacing: 1px !important;
+        }
+
+        /* ── LOADING SPINNER (shown while Clerk loads) ── */
+        .spinner-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+        }
+        .spinner {
+            width: 48px; height: 48px;
+            border: 3px solid rgba(0,201,167,0.15);
+            border-top-color: var(--teal);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner-text { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 2px; }
+
+        /* ── FOOTER ── */
+        .auth-footer {
+            text-align: center;
+            margin-top: 28px;
+        }
+        .auth-footer a {
+            font-size: 11px;
+            color: rgba(255,255,255,0.35);
+            text-decoration: none;
+            letter-spacing: 1px;
+            transition: color 0.2s;
+            font-family: sans-serif;
+        }
+        .auth-footer a:hover { color: var(--teal); }
+
+        /* ── ANIMATED PLANE DECO ── */
+        .plane-trail {
+            position: fixed;
+            z-index: 3;
+            pointer-events: none;
+            font-size: 22px;
+            opacity: 0;
+            animation: flyAcross 12s linear infinite;
+        }
+        .plane-trail:nth-child(1) { top: 15%; animation-delay: 0s; }
+        .plane-trail:nth-child(2) { top: 55%; animation-delay: 5s; font-size: 16px; }
+        .plane-trail:nth-child(3) { top: 80%; animation-delay: 9s; font-size: 14px; opacity: 0; }
+
+        @keyframes flyAcross {
+            0%   { opacity: 0; transform: translateX(-80px); }
+            5%   { opacity: 0.6; }
+            95%  { opacity: 0.5; }
+            100% { opacity: 0; transform: translateX(110vw); }
+        }
+
+        /* ── SCAN LINE ── */
+        .scan-line {
+            position: fixed;
+            left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(0,201,167,0.4), transparent);
+            z-index: 2;
+            animation: scanDown 6s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes scanDown {
+            from { top: -4px; }
+            to   { top: 100vh; }
+        }
+
+        /* ── CORNER DECO ── */
+        .corner { position: fixed; z-index: 3; pointer-events: none; }
+        .corner-tl { top: 20px; left: 20px; border-top: 2px solid rgba(0,201,167,0.4); border-left: 2px solid rgba(0,201,167,0.4); width: 30px; height: 30px; }
+        .corner-tr { top: 20px; right: 20px; border-top: 2px solid rgba(0,201,167,0.4); border-right: 2px solid rgba(0,201,167,0.4); width: 30px; height: 30px; }
+        .corner-bl { bottom: 20px; left: 20px; border-bottom: 2px solid rgba(0,201,167,0.4); border-left: 2px solid rgba(0,201,167,0.4); width: 30px; height: 30px; }
+        .corner-br { bottom: 20px; right: 20px; border-bottom: 2px solid rgba(0,201,167,0.4); border-right: 2px solid rgba(0,201,167,0.4); width: 30px; height: 30px; }
+    </style>
+</head>
+<body>
+
+    <!-- Background layers -->
+    <canvas id="stars-canvas"></canvas>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="grid-overlay"></div>
+    <div class="scan-line"></div>
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+    <div class="plane-trail">✈</div>
+    <div class="plane-trail">✈</div>
+    <div class="plane-trail">✈</div>
+
+    <!-- Auth card -->
+    <div class="auth-wrap">
+        <div class="auth-card">
+
+            <div class="logo-row">
+                <div class="logo-icon">✈</div>
+                <span class="logo-text">AIRGO</span>
+            </div>
+
+            <div class="auth-headline">
+                <h2>WELCOME ABOARD</h2>
+                <p>Sign in or create your account to start booking</p>
+            </div>
+
+            <div class="divider">
+                <div class="divider-line"></div>
+                <span class="divider-text">SECURE AUTH</span>
+                <div class="divider-line"></div>
+            </div>
+
+            <!-- Clerk mounts here -->
+            <div id="clerk-auth">
+                <div class="spinner-wrap" id="loading-spinner">
+                    <div class="spinner"></div>
+                    <span class="spinner-text">INITIALIZING SECURE LOGIN…</span>
+                </div>
+            </div>
+
+            <div class="auth-footer">
+                <a href="index.html">← Back to AIRGO</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clerk JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
+
+    <!-- Starfield canvas -->
+    <script>
+        (function () {
+            const canvas = document.getElementById('stars-canvas');
+            const ctx = canvas.getContext('2d');
+            let stars = [];
+
+            function resize() {
+                canvas.width  = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            for (let i = 0; i < 180; i++) {
+                stars.push({
+                    x: Math.random(),
+                    y: Math.random(),
+                    r: Math.random() * 1.5 + 0.3,
+                    a: Math.random(),
+                    da: (Math.random() - 0.5) * 0.008,
+                    speed: Math.random() * 0.00008 + 0.00002
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                stars.forEach(s => {
+                    s.a = Math.max(0.05, Math.min(1, s.a + s.da));
+                    if (s.a <= 0.05 || s.a >= 1) s.da *= -1;
+                    s.y -= s.speed;
+                    if (s.y < 0) { s.y = 1; s.x = Math.random(); }
+                    ctx.beginPath();
+                    ctx.arc(s.x * canvas.width, s.y * canvas.height, s.r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(0,201,167,${s.a * 0.7})`;
+                    ctx.fill();
+                });
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+    </script>
+
+    <!-- Clerk init -->
+    <script>
+        const CLERK_PUBLISHABLE_KEY = 'pk_test_bm90ZWQtb3Bvc3N1bS01Ni5jbGVyay5hY2NvdW50cy5kZXYk';
+
+        async function initClerk() {
+            if (!window.Clerk) {
+                document.getElementById('loading-spinner').innerHTML =
+                    '<span class="spinner-text" style="color:#ff6b9d">Clerk failed to load. Check connection.</span>';
+                return;
+            }
+
+            const clerk = new window.Clerk(CLERK_PUBLISHABLE_KEY);
+            await clerk.load();
+
+            // If already signed in, redirect to main app
+            if (clerk.user) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Hide spinner and mount sign-in component
+            const mountTarget = document.getElementById('clerk-auth');
+            mountTarget.innerHTML = '';
+
+            clerk.mountSignIn(mountTarget, {
+                afterSignInUrl: 'index.html',
+                afterSignUpUrl: 'index.html',
+                signUpUrl: '',
+                appearance: {
+                    variables: {
+                        colorPrimary: '#00c9a7',
+                        colorBackground: 'transparent',
+                        colorText: '#ffffff',
+                        colorTextSecondary: 'rgba(255,255,255,0.6)',
+                        colorInputBackground: 'rgba(255,255,255,0.06)',
+                        colorInputText: '#ffffff',
+                        borderRadius: '12px',
+                        fontFamily: 'Orbitron, sans-serif',
+                        fontSize: '13px',
+                    },
+                    elements: {
+                        card: { background: 'transparent', boxShadow: 'none', border: 'none' },
+                        rootBox: { width: '100%' },
+                        formButtonPrimary: {
+                            background: 'linear-gradient(135deg, #00c9a7, #667eea)',
+                            letterSpacing: '1px',
+                            fontWeight: '700',
+                        },
+                        footerActionLink: { color: '#00c9a7' },
+                        identityPreviewText: { color: '#ffffff' },
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initClerk);
+    </script>
+</body>
+</html>
