@@ -1573,7 +1573,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         price: amount || 0,
                         currency: 'NGN',
                         payment_method: currentBooking.paymentMethod || 'card',
-                        payment_reference: String(response.transaction_id),
+                        payment_reference: String(response.tx_ref || response.transaction_id),
+                        transaction_id: String(response.transaction_id),
                         flw_transaction_id: String(response.transaction_id)
                     });
 

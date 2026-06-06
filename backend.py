@@ -58,7 +58,7 @@ CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY", "")
 CLERK_PUBLISHABLE_KEY = os.getenv("CLERK_PUBLISHABLE_KEY", "")
 
 # Flutterwave
-FLUTTERWAVE_SECRET_KEY = os.getenv("FLUTTERWAVE_SECRET_KEY", "")
+FLUTTERWAVE_SECRET_KEY = os.getenv("FLW_SECRET_KEY", "")
  
 # Supabase
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -90,7 +90,7 @@ if not AMADEUS_API_KEY:
 if not CLERK_SECRET_KEY:
     print("WARNING: CLERK_SECRET_KEY not set - auth disabled")
 if not FLUTTERWAVE_SECRET_KEY:
-    print("WARNING: FLUTTERWAVE_SECRET_KEY not set - payment verification disabled")
+    print("WARNING: FLW_SECRET_KEY not set - payments cannot be verified")
 if not SUPABASE_URL:
     print("WARNING: SUPABASE_URL not set - database disabled")
 if not RESEND_API_KEY:
@@ -132,8 +132,10 @@ class BookingRequest(BaseModel):
     price: float
     currency: str = "NGN"
     payment_method: str
-    payment_reference: str
-    flw_transaction_id: Optional[str] = None  # Flutterwave transaction_id for server verification
+    payment_reference: str                    # tx_ref YOU generated — used as the Flutterwave ref check
+    transaction_id: Optional[str] = None      # Flutterwave's own transaction id from the callback
+    flw_transaction_id: Optional[str] = None  # alias kept for backwards compat
+    flight_offer: Optional[dict] = None       # raw Amadeus offer, for re-pricing (optional)
  
  
 # ============================================
@@ -230,8 +232,40 @@ async def get_or_create_user(clerk_user_id: str, email: str, full_name: str = No
     
     result = supabase.table("users").insert(new_user).execute()
     return result.data[0] if result.data else None
- 
- 
+
+
+async def resolve_user(clerk_user_id, email: str, full_name: str = None, phone: str = None):
+    """
+    Find or create a user. Works with OR without a Clerk id.
+    Order: clerk_user_id → email → create new row.
+    NOTE: users.clerk_user_id must be NULLABLE in Supabase for guest bookings.
+    """
+    if not supabase:
+        return None
+    try:
+        if clerk_user_id:
+            res = supabase.table("users").select("*").eq("clerk_user_id", clerk_user_id).execute()
+            if res.data:
+                return res.data[0]
+        # Fall back to email lookup (covers guest + signed-in users whose row exists)
+        if email:
+            res = supabase.table("users").select("*").eq("email", email).execute()
+            if res.data:
+                return res.data[0]
+        # Create a new row
+        new_user = {
+            "clerk_user_id": clerk_user_id,   # may be None — that's fine
+            "email": email,
+            "full_name": full_name,
+            "phone": phone,
+        }
+        res = supabase.table("users").insert(new_user).execute()
+        return res.data[0] if res.data else None
+    except Exception as e:
+        print(f"resolve_user error: {e}")
+        return None
+
+
 async def save_booking_to_database(booking: BookingRequest, user_db_id: str):
     """Save booking to Supabase database"""
     if not supabase:
@@ -267,39 +301,49 @@ async def save_booking_to_database(booking: BookingRequest, user_db_id: str):
         return None
  
  
-async def verify_flutterwave_payment(transaction_id: str, expected_amount: float, expected_currency: str = "NGN") -> bool:
-    """Verify a Flutterwave transaction server-side before saving the booking."""
+async def verify_flutterwave_payment(
+    transaction_id: str,
+    expected_amount: float,
+    expected_reference: str,
+    expected_currency: str = "NGN",
+) -> dict:
+    """
+    Returns {"verified": bool, "reason": str, "data": dict|None}.
+    Checks all four facts: status, amount, currency, tx_ref.
+    Never raises — failures are returned as {"verified": False, ...}.
+    """
     if not FLUTTERWAVE_SECRET_KEY:
-        print("WARNING: Skipping Flutterwave verification — secret key not set")
-        return True  # fail-open only in dev; set the key in prod
+        return {"verified": False, "reason": "payment_not_configured", "data": None}
+    if not transaction_id:
+        return {"verified": False, "reason": "missing_transaction_id", "data": None}
 
     url = f"https://api.flutterwave.com/v3/transactions/{transaction_id}/verify"
     headers = {"Authorization": f"Bearer {FLUTTERWAVE_SECRET_KEY}"}
 
-    async with httpx.AsyncClient() as h:
-        try:
-            resp = await h.get(url, headers=headers, timeout=15.0)
-        except Exception as e:
-            print(f"Flutterwave verification request failed: {e}")
-            raise HTTPException(status_code=502, detail="Could not reach Flutterwave to verify payment")
+    try:
+        async with httpx.AsyncClient() as http:
+            resp = await http.get(url, headers=headers, timeout=30.0)
+    except Exception as e:
+        print(f"Flutterwave verify network error: {e}")
+        return {"verified": False, "reason": "verify_unreachable", "data": None}
 
     if resp.status_code != 200:
-        print(f"Flutterwave API error {resp.status_code}: {resp.text}")
-        raise HTTPException(status_code=402, detail="Payment verification failed")
+        print(f"Flutterwave verify failed: {resp.status_code} - {resp.text}")
+        return {"verified": False, "reason": "verify_failed", "data": None}
 
     data = resp.json().get("data", {})
-    status = data.get("status", "")
-    charged_amount = float(data.get("charged_amount", 0))
-    currency = data.get("currency", "")
 
-    if status not in ("successful", "completed"):
-        raise HTTPException(status_code=402, detail=f"Payment not successful (status: {status})")
-    if currency != expected_currency:
-        raise HTTPException(status_code=402, detail=f"Currency mismatch: expected {expected_currency}, got {currency}")
-    if charged_amount < expected_amount * 0.99:  # allow 1% rounding
-        raise HTTPException(status_code=402, detail=f"Amount mismatch: expected {expected_amount}, charged {charged_amount}")
+    status_ok   = data.get("status") == "successful"
+    amount_ok   = float(data.get("amount", 0)) >= float(expected_amount)
+    currency_ok = data.get("currency") == expected_currency
+    ref_ok      = (not expected_reference) or (data.get("tx_ref") == expected_reference)
 
-    return True
+    if status_ok and amount_ok and currency_ok and ref_ok:
+        return {"verified": True, "reason": "ok", "data": data}
+
+    print(f"Flutterwave mismatch -> status={status_ok} amount={amount_ok} "
+          f"currency={currency_ok} ref={ref_ok}")
+    return {"verified": False, "reason": "verification_mismatch", "data": data}
 
 
 async def get_user_bookings(user_db_id: str):
@@ -540,7 +584,33 @@ class AmadeusClient:
                 continue
         
         return flights
- 
+
+    async def confirm_price(self, flight_offer: dict):
+        """
+        Re-validate a flight offer right before charging via Amadeus Flight Offers Price.
+        Returns {"price": float, "currency": str, "raw": dict} or None on any failure.
+        """
+        token = await self.get_access_token()
+        url = "https://api.amadeus.com/v1/shopping/flight-offers/pricing"
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        payload = {"data": {"type": "flight-offers-pricing", "flightOffers": [flight_offer]}}
+
+        try:
+            async with httpx.AsyncClient() as http:
+                resp = await http.post(url, headers=headers, json=payload, timeout=30.0)
+            if resp.status_code == 200:
+                offer = resp.json()["data"]["flightOffers"][0]
+                return {
+                    "price": float(offer["price"]["grandTotal"]),
+                    "currency": offer["price"]["currency"],
+                    "raw": resp.json(),
+                }
+            print(f"Amadeus pricing error: {resp.status_code} - {resp.text}")
+            return None
+        except Exception as e:
+            print(f"Amadeus pricing exception: {e}")
+            return None
+
 amadeus = AmadeusClient()
  
  
@@ -838,49 +908,74 @@ async def chat(chat_message: ChatMessage):
  
 @app.post("/api/bookings")
 async def create_booking(booking: BookingRequest, authorization: str = Header(None)):
-    """Create a new booking (requires authentication)"""
-    try:
-        # Verify user (optional for now - can make required later)
-        user_info = None
-        if authorization:
-            try:
-                user_info = await verify_clerk_token(authorization)
-            except:
-                pass  # Allow bookings without auth for now
-        
-        # Verify Flutterwave payment server-side before persisting anything
-        txn_id = booking.flw_transaction_id or booking.payment_reference
-        if txn_id and txn_id.lstrip('-').isdigit():
-            await verify_flutterwave_payment(txn_id, booking.price, booking.currency)
+    """
+    Confirmation pipeline — 4 ordered steps:
+    1. Verify payment with Flutterwave  (hard gate)
+    2. Re-price with Amadeus            (only if flight_offer provided)
+    3. Save to Supabase                 (works with or without Clerk)
+    4. Send Resend confirmation email   (only after verified payment)
+    """
+    # --- Soft auth: use Clerk if present, never block saving on it ---
+    clerk_user_id = None
+    if authorization:
+        try:
+            info = await verify_clerk_token(authorization)
+            clerk_user_id = info.get("user_id")
+        except Exception:
+            clerk_user_id = None  # guest booking — that's fine
 
-        # Get or create user in database
-        user_db_id = None
-        if user_info and supabase:
-            db_user = await get_or_create_user(
-                user_info["user_id"],
-                booking.email,
-                booking.passenger_name,
-                booking.phone
-            )
-            if db_user:
-                user_db_id = db_user["id"]
-        
-        # Save booking to database
-        if user_db_id:
-            await save_booking_to_database(booking, user_db_id)
-        
-        # Send confirmation email
-        await send_booking_confirmation_email(booking)
-        
+    # --- STEP 1: VERIFY PAYMENT (hard gate — nothing saves without this) ---
+    txn_id = booking.transaction_id or booking.flw_transaction_id or booking.payment_reference
+    payment = await verify_flutterwave_payment(
+        transaction_id=txn_id,
+        expected_amount=booking.price,
+        expected_reference=booking.payment_reference,
+        expected_currency=booking.currency or "NGN",
+    )
+    if not payment["verified"]:
+        print(f"Payment verification failed: {payment['reason']}")
         return {
-            "success": True,
-            "booking_reference": booking.booking_reference,
-            "message": "Booking confirmed! Check your email for details."
+            "success": False,
+            "message": (
+                "We couldn't confirm your payment just yet. If money left your "
+                "account, nothing is lost — please give it a moment and try again. "
+                "Still stuck? Reach us at booking@bookairgo.online and we'll sort it."
+            ),
         }
-        
-    except Exception as e:
-        print(f"Booking error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+
+    verified_amount = float(payment["data"].get("amount", booking.price))
+
+    # --- STEP 2: RE-PRICE (optional — only runs if the raw offer was sent) ---
+    if booking.flight_offer:
+        priced = await amadeus.confirm_price(booking.flight_offer)
+        if priced and priced["price"] > verified_amount:
+            print(f"Price drift: paid {verified_amount}, current {priced['price']}")
+            return {
+                "success": False,
+                "message": (
+                    "That fare updated while you were checking out, so we've paused "
+                    "before confirming a seat. Please reopen the flight to see the "
+                    "latest price — your payment will be handled fairly either way."
+                ),
+            }
+
+    # --- STEP 3: SAVE TO SUPABASE (works with or without Clerk) ---
+    saved = None
+    user = await resolve_user(clerk_user_id, booking.email, booking.passenger_name, booking.phone)
+    if user:
+        saved = await save_booking_to_database(booking, user["id"])
+    else:
+        print("User could not be resolved/created — booking not saved to DB")
+
+    # --- STEP 4: CONFIRMATION EMAIL (only after verified payment) ---
+    await send_booking_confirmation_email(booking)
+
+    return {
+        "success": True,
+        "booking_reference": booking.booking_reference,
+        "saved": bool(saved),
+        "message": "Booking confirmed! Check your email for details.",
+    }
  
  
 @app.get("/api/my-bookings")
