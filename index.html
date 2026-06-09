@@ -1462,14 +1462,15 @@ document.addEventListener("DOMContentLoaded", () => {
             bookingLock = true;
             setTimeout(() => { bookingLock = false; }, 2000);
             
-            // Extract flight date naturally from conversation or use default
+            // Use the actual departure date from the flight offer (most accurate)
             let flightDate;
-            
-            // Check if date was captured during search (stored globally)
-            if (window.lastSearchDate) {
+            const rawDeparture = flight.departTime || flight.departure_time || flight.departureTime || '';
+            if (rawDeparture) {
+                // Extract just the date part whether it's "2026-06-15T10:30:00" or "2026-06-15"
+                flightDate = rawDeparture.split('T')[0];
+            } else if (window.lastSearchDate) {
                 flightDate = window.lastSearchDate;
             } else {
-                // Default to 7 days from now if no date found
                 flightDate = new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0];
             }
             
