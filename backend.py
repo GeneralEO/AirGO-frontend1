@@ -721,6 +721,8 @@ async def health_check():
         "amadeus_configured": bool(AMADEUS_API_KEY),
         "clerk_configured": bool(CLERK_SECRET_KEY),
         "supabase_configured": bool(SUPABASE_URL),
+        "supabase_connected": bool(supabase),
+        "flutterwave_configured": bool(FLUTTERWAVE_SECRET_KEY),
         "resend_configured": bool(RESEND_API_KEY)
     }
  
