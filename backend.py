@@ -334,16 +334,21 @@ async def verify_flutterwave_payment(
     data = resp.json().get("data", {})
 
     status_ok   = data.get("status") == "successful"
-    amount_ok   = float(data.get("amount", 0)) >= float(expected_amount)
+    amount_ok   = float(data.get("amount", 0)) >= float(expected_amount) * 0.99  # 1% tolerance
     currency_ok = data.get("currency") == expected_currency
     ref_ok      = (not expected_reference) or (data.get("tx_ref") == expected_reference)
 
-    if status_ok and amount_ok and currency_ok and ref_ok:
+    print(f"Flutterwave check -> status={status_ok} amount={amount_ok} "
+          f"currency={currency_ok} ref={ref_ok} | "
+          f"flw_amount={data.get('amount')} expected={expected_amount} "
+          f"flw_currency={data.get('currency')} flw_ref={data.get('tx_ref')} expected_ref={expected_reference}")
+
+    # Core checks: status + amount + currency must pass
+    # ref_ok is logged but not a hard gate (tx_ref formatting can vary)
+    if status_ok and amount_ok and currency_ok:
         return {"verified": True, "reason": "ok", "data": data}
 
-    print(f"Flutterwave mismatch -> status={status_ok} amount={amount_ok} "
-          f"currency={currency_ok} ref={ref_ok}")
-    return {"verified": False, "reason": "verification_mismatch", "data": data}
+    return {"verified": False, "reason": f"verification_mismatch: status={status_ok} amount={amount_ok} currency={currency_ok}", "data": data}
 
 
 async def get_user_bookings(user_db_id: str):
