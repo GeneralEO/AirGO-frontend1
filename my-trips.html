@@ -534,6 +534,28 @@
             box-shadow: 0 12px 35px rgba(0, 201, 167, 0.7);
         }
 
+        .auth-btn {
+            padding: 10px 18px;
+            background: rgba(0, 201, 167, 0.12);
+            border: 2px solid rgba(0, 201, 167, 0.4);
+            border-radius: 50px;
+            color: #00c9a7;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .auth-btn:hover {
+            background: rgba(0, 201, 167, 0.25);
+            border-color: #00c9a7;
+            box-shadow: 0 4px 15px rgba(0, 201, 167, 0.4);
+        }
+
         @media (max-width: 768px) {
             .stats-grid {
                 grid-template-columns: 1fr 1fr;
@@ -575,6 +597,7 @@
                 <a href="settings-y2k.html" class="top-nav-btn">
                     ⚙️ Settings
                 </a>
+                <button id="authBtn" class="auth-btn">🔐 SIGN IN</button>
             </div>
         </div>
 
@@ -623,8 +646,9 @@
     </div>
 
     <script>
-        // Get bookings from localStorage
+        // Get bookings — uses Supabase data if loaded, falls back to localStorage
         function getBookings() {
+            if (window.__loadedBookings) return window.__loadedBookings;
             const bookings = localStorage.getItem('airgo_bookings');
             return bookings ? JSON.parse(bookings) : [];
         }
@@ -874,7 +898,7 @@ PRE-FLIGHT CHECKLIST:
             document.getElementById('completedCount').textContent = past.length;
             
             const totalSpent = bookings.reduce((sum, b) => {
-                const price = parseFloat(b.price.replace(/[^0-9.]/g, ''));
+                const price = parseFloat(String(b.price).replace(/[^0-9.]/g, '')) || 0;
                 return sum + price;
             }, 0);
             document.getElementById('totalSpent').textContent = `₦${totalSpent.toLocaleString()}`;
@@ -912,8 +936,111 @@ PRE-FLIGHT CHECKLIST:
             }
         }
 
-        // Initialize
-        renderDashboard();
+        // Initialize — will be called after Clerk loads
+        async function init() {
+            await loadBookingsAndRender();
+        }
+    </script>
+
+    <!-- Clerk JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
+    <script>
+        const CLERK_PUBLISHABLE_KEY = 'pk_test_bm90ZWQtb3Bvc3N1bS01Ni5jbGVyay5hY2NvdW50cy5kZXYk';
+        const BACKEND_URL = 'https://airgo-backend1.onrender.com';
+
+        // Map Supabase booking fields → UI fields
+        function mapSupabaseBooking(b) {
+            return {
+                bookingReference: b.booking_reference,
+                airline: b.airline || '',
+                flightNumber: b.flight_number || '',
+                origin: b.origin || '',
+                destination: b.destination || '',
+                departureTime: b.departure_time || '',
+                arrivalTime: b.arrival_time || '',
+                passengerName: b.passenger_name || '',
+                email: b.passenger_email || '',
+                phone: b.passenger_phone || '',
+                price: String(b.price || '0'),
+                flightDate: b.flight_date || (b.created_at ? b.created_at.split('T')[0] : ''),
+                bookingDate: b.created_at ? b.created_at.split('T')[0] : '',
+                status: b.status || 'confirmed',
+            };
+        }
+
+        async function fetchBookingsFromBackend(token) {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/my-bookings`, {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+                });
+                if (!res.ok) return null;
+                const data = await res.json();
+                return (data.bookings || []).map(mapSupabaseBooking);
+            } catch (e) {
+                console.warn('Failed to fetch bookings from backend:', e);
+                return null;
+            }
+        }
+
+        async function loadBookingsAndRender() {
+            let bookings = null;
+
+            if (window.__clerk && window.__clerk.session) {
+                const token = await window.__clerk.session.getToken();
+                if (token) bookings = await fetchBookingsFromBackend(token);
+            }
+
+            // Fall back to localStorage for guests or if backend fails
+            if (!bookings) {
+                const stored = localStorage.getItem('airgo_bookings');
+                bookings = stored ? JSON.parse(stored) : [];
+            }
+
+            // Override global getBookings so renderDashboard uses fresh data
+            window.__loadedBookings = bookings;
+            renderDashboard();
+        }
+
+        function updateAuthUI(clerk) {
+            const authBtn = document.getElementById('authBtn');
+            if (!authBtn) return;
+            if (clerk.user) {
+                const name = clerk.user.fullName || clerk.user.firstName || '';
+                const initials = name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '👤';
+                authBtn.textContent = initials + ' · SIGN OUT';
+                authBtn.onclick = () => clerk.signOut().then(() => loadBookingsAndRender());
+                authBtn.style.background = 'linear-gradient(135deg, rgba(0,201,167,0.3), rgba(102,126,234,0.2))';
+                authBtn.style.borderColor = '#00c9a7';
+            } else {
+                authBtn.textContent = '🔐 SIGN IN';
+                authBtn.onclick = () => clerk.openSignIn();
+                authBtn.style.background = '';
+                authBtn.style.borderColor = '';
+            }
+        }
+
+        async function initClerk() {
+            if (!window.Clerk) {
+                // No Clerk — render with localStorage only
+                await loadBookingsAndRender();
+                return;
+            }
+            try {
+                const clerk = new window.Clerk(CLERK_PUBLISHABLE_KEY);
+                await clerk.load();
+                window.__clerk = clerk;
+                updateAuthUI(clerk);
+                clerk.addListener(({ user }) => {
+                    updateAuthUI(clerk);
+                    loadBookingsAndRender();
+                });
+            } catch (e) {
+                console.warn('Clerk init failed:', e);
+            }
+            await loadBookingsAndRender();
+        }
+
+        document.addEventListener('DOMContentLoaded', initClerk);
     </script>
 </body>
 </html>

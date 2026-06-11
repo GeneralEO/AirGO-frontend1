@@ -133,6 +133,7 @@ class BookingRequest(BaseModel):
     currency: str = "NGN"
     payment_method: str
     payment_reference: str                    # tx_ref YOU generated — used as the Flutterwave ref check
+    flight_date: Optional[str] = None         # actual travel date e.g. "2026-06-15"
     transaction_id: Optional[str] = None      # Flutterwave's own transaction id from the callback
     flw_transaction_id: Optional[str] = None  # alias kept for backwards compat
     flight_offer: Optional[dict] = None       # raw Amadeus offer, for re-pricing (optional)
@@ -282,6 +283,7 @@ async def save_booking_to_database(booking: BookingRequest, user_db_id: str):
             "destination": booking.destination,
             "departure_time": booking.departure_time or "",
             "arrival_time": booking.arrival_time or "",
+            "flight_date": booking.flight_date or "",
             "passenger_name": booking.passenger_name,
             "passenger_phone": booking.phone,
             "passenger_email": booking.email,
