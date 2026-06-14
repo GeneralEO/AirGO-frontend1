@@ -1462,14 +1462,14 @@ document.addEventListener("DOMContentLoaded", () => {
             bookingLock = true;
             setTimeout(() => { bookingLock = false; }, 2000);
             
-            // Use the actual departure date from the flight offer (most accurate)
+            // Use the search date (most reliable — it's what the user searched for)
             let flightDate;
             const rawDeparture = flight.departTime || flight.departure_time || flight.departureTime || '';
-            if (rawDeparture) {
-                // Extract just the date part whether it's "2026-06-15T10:30:00" or "2026-06-15"
-                flightDate = rawDeparture.split('T')[0];
+            const isoDateMatch = rawDeparture.match(/^(\d{4}-\d{2}-\d{2})/);
+            if (isoDateMatch) {
+                flightDate = isoDateMatch[1]; // e.g. "2026-06-15" from ISO datetime
             } else if (window.lastSearchDate) {
-                flightDate = window.lastSearchDate;
+                flightDate = window.lastSearchDate; // date user typed in chat
             } else {
                 flightDate = new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0];
             }

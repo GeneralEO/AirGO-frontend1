@@ -950,6 +950,11 @@ PRE-FLIGHT CHECKLIST:
 
         // Map Supabase booking fields → UI fields
         function mapSupabaseBooking(b) {
+            const bookingDate = b.created_at ? b.created_at.split('T')[0] : '';
+            // flight_date is the actual travel date; fall back to booking date if missing
+            const flightDate = (b.flight_date && b.flight_date.match(/^\d{4}-\d{2}-\d{2}/))
+                ? b.flight_date
+                : bookingDate;
             return {
                 bookingReference: b.booking_reference,
                 airline: b.airline || '',
@@ -962,8 +967,8 @@ PRE-FLIGHT CHECKLIST:
                 email: b.passenger_email || '',
                 phone: b.passenger_phone || '',
                 price: String(b.price || '0'),
-                flightDate: b.flight_date || (b.created_at ? b.created_at.split('T')[0] : ''),
-                bookingDate: b.created_at ? b.created_at.split('T')[0] : '',
+                flightDate: flightDate,
+                bookingDate: bookingDate,
                 status: b.status || 'confirmed',
             };
         }
