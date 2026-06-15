@@ -704,9 +704,12 @@ async def process_with_claude(user_message: str, flight_data: List[FlightInfo] =
         "content": current_context
     })
     
+    if not client:
+        return "I'm currently unavailable. Please try again shortly."
+
     # Call Claude
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-haiku-4-5-20251001",
         max_tokens=800,
         system=get_system_prompt(),
         messages=messages
