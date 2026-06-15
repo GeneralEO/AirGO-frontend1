@@ -372,12 +372,22 @@
         async function initClerk() {
             if (!window.Clerk) {
                 document.getElementById('loading-spinner').innerHTML =
-                    '<span class="spinner-text" style="color:#ff6b9d">Clerk failed to load. Check connection.</span>';
+                    '<span class="spinner-text" style="color:#ff6b9d">Auth service unavailable. Please try again shortly.</span>';
                 return;
             }
 
-            const clerk = new window.Clerk(CLERK_PUBLISHABLE_KEY);
-            await clerk.load();
+            let clerk;
+            try {
+                clerk = new window.Clerk(CLERK_PUBLISHABLE_KEY);
+                await clerk.load();
+            } catch (e) {
+                document.getElementById('loading-spinner').innerHTML =
+                    '<div style="text-align:center;padding:20px">' +
+                    '<p style="color:#ff6b9d;margin-bottom:16px">Auth service is setting up. DNS propagation in progress — please check back in a few hours.</p>' +
+                    '<a href="index.html" style="color:#00c9a7;text-decoration:none">← Back to AIRGO</a>' +
+                    '</div>';
+                return;
+            }
 
             // If already signed in, redirect to main app
             if (clerk.user) {
