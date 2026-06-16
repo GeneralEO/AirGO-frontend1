@@ -450,6 +450,28 @@
             }
         }
 
+        .auth-btn {
+            padding: 10px 18px;
+            background: rgba(0, 201, 167, 0.12);
+            border: 2px solid rgba(0, 201, 167, 0.4);
+            border-radius: 50px;
+            color: #00c9a7;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .auth-btn:hover {
+            background: rgba(0, 201, 167, 0.25);
+            border-color: #00c9a7;
+            box-shadow: 0 4px 15px rgba(0, 201, 167, 0.4);
+        }
+
         @media (max-width: 768px) {
             .top-nav {
                 display: none;
@@ -491,6 +513,7 @@
                 <a href="#" class="top-nav-btn active">
                     ⚙️ Settings
                 </a>
+                <button id="authBtn" class="auth-btn">🔐 SIGN IN</button>
             </div>
         </div>
 
@@ -791,6 +814,60 @@
 
         // Initialize
         loadSettings();
+    </script>
+
+    <!-- Clerk JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
+    <script>
+        const CLERK_PUBLISHABLE_KEY = 'pk_live_Y2xlcmsuYm9va2FpcmdvLm9ubGluZSQ';
+
+        function populateFromClerk(user) {
+            // Only pre-fill fields that are currently empty
+            const fullNameEl = document.getElementById('fullName');
+            const emailEl    = document.getElementById('email');
+            const phoneEl    = document.getElementById('phone');
+
+            if (fullNameEl && !fullNameEl.value && user.fullName)
+                fullNameEl.value = user.fullName;
+            if (emailEl && !emailEl.value && user.primaryEmailAddress)
+                emailEl.value = user.primaryEmailAddress.emailAddress;
+            if (phoneEl && !phoneEl.value && user.primaryPhoneNumber)
+                phoneEl.value = user.primaryPhoneNumber.phoneNumber;
+        }
+
+        function updateAuthUI(clerk) {
+            const authBtn = document.getElementById('authBtn');
+            if (!authBtn) return;
+            if (clerk.user) {
+                const name = clerk.user.fullName || clerk.user.firstName || '';
+                const initials = name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '👤';
+                authBtn.textContent = initials + ' · SIGN OUT';
+                authBtn.onclick = () => clerk.signOut();
+                authBtn.style.background = 'linear-gradient(135deg, rgba(0,201,167,0.3), rgba(102,126,234,0.2))';
+                authBtn.style.borderColor = '#00c9a7';
+                populateFromClerk(clerk.user);
+            } else {
+                authBtn.textContent = '🔐 SIGN IN';
+                authBtn.onclick = () => clerk.openSignIn();
+                authBtn.style.background = '';
+                authBtn.style.borderColor = '';
+            }
+        }
+
+        async function initClerk() {
+            if (!window.Clerk || CLERK_PUBLISHABLE_KEY === 'YOUR_CLERK_PUBLISHABLE_KEY') return;
+            try {
+                const clerk = new window.Clerk(CLERK_PUBLISHABLE_KEY);
+                await clerk.load();
+                window.__clerk = clerk;
+                updateAuthUI(clerk);
+                clerk.addListener(() => updateAuthUI(clerk));
+            } catch (e) {
+                console.warn('Clerk init failed:', e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initClerk);
     </script>
 </body>
 </html>
