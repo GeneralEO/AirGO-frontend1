@@ -1471,7 +1471,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else if (window.lastSearchDate) {
                 flightDate = window.lastSearchDate; // date user typed in chat
             } else {
-                flightDate = new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0];
+                flightDate = toLocalISODate(new Date(Date.now() + 7*24*60*60*1000));
             }
             
             // Store flight with date for booking; pre-fill from Clerk profile if signed in
@@ -1637,28 +1637,37 @@ document.addEventListener("DOMContentLoaded", () => {
             return details;
         }
 
+        // Format a Date using LOCAL calendar components (avoids the UTC
+        // off-by-one that toISOString() causes for non-UTC timezones).
+        function toLocalISODate(d) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
         // Extract and store flight date naturally from user message
         function extractAndStoreDateFromMessage(message) {
             const msgLower = message.toLowerCase();
             const today = new Date();
-            
+
             // Check for "today"
             if (msgLower.includes('today')) {
-                window.lastSearchDate = today.toISOString().split('T')[0];
+                window.lastSearchDate = toLocalISODate(today);
                 return;
             }
-            
+
             // Check for "tomorrow"
             if (msgLower.includes('tomorrow')) {
                 const tomorrow = new Date(today.getTime() + 24*60*60*1000);
-                window.lastSearchDate = tomorrow.toISOString().split('T')[0];
+                window.lastSearchDate = toLocalISODate(tomorrow);
                 return;
             }
-            
+
             // Check for "next week"
             if (msgLower.includes('next week')) {
                 const nextWeek = new Date(today.getTime() + 7*24*60*60*1000);
-                window.lastSearchDate = nextWeek.toISOString().split('T')[0];
+                window.lastSearchDate = toLocalISODate(nextWeek);
                 return;
             }
             
@@ -1679,7 +1688,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const day = parseInt(match[1]);
                     const year = today.getFullYear();
                     const date = new Date(year, i, day);
-                    window.lastSearchDate = date.toISOString().split('T')[0];
+                    window.lastSearchDate = toLocalISODate(date);
                     return;
                 }
             }
@@ -1698,14 +1707,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 const month = parseInt(dateMatch[2]) - 1; // JS months are 0-indexed
                 const year = dateMatch[3] ? (dateMatch[3].length === 2 ? 2000 + parseInt(dateMatch[3]) : parseInt(dateMatch[3])) : today.getFullYear();
                 const date = new Date(year, month, day);
-                window.lastSearchDate = date.toISOString().split('T')[0];
+                window.lastSearchDate = toLocalISODate(date);
                 return;
             }
             
             // If no date found, keep existing date or set to 7 days from now
             if (!window.lastSearchDate) {
                 const weekFromNow = new Date(today.getTime() + 7*24*60*60*1000);
-                window.lastSearchDate = weekFromNow.toISOString().split('T')[0];
+                window.lastSearchDate = toLocalISODate(weekFromNow);
             }
         }
 

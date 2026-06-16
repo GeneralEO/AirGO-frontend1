@@ -653,9 +653,18 @@
             return bookings ? JSON.parse(bookings) : [];
         }
 
+        // Parse a "YYYY-MM-DD" (or Supabase "YYYY-MM-DD HH:MM:SS") string as a
+        // LOCAL date, avoiding the UTC shift that new Date("YYYY-MM-DD") causes.
+        function parseLocalDate(value) {
+            if (!value) return new Date(NaN);
+            const m = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+            return new Date(value);
+        }
+
         // Calculate days until flight
         function getDaysUntil(dateStr) {
-            const flightDate = new Date(dateStr);
+            const flightDate = parseLocalDate(dateStr);
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             flightDate.setHours(0, 0, 0, 0);
@@ -717,7 +726,9 @@
 
         // Add to Google Calendar
         function addToCalendar(booking) {
-            const startDate = new Date(booking.flightDate || booking.bookingDate || Date.now());
+            const startDate = (booking.flightDate || booking.bookingDate)
+                ? parseLocalDate(booking.flightDate || booking.bookingDate)
+                : new Date();
             const title = `Flight: ${booking.airline} ${booking.flightNumber}`;
             const details = `Route: ${booking.origin} → ${booking.destination}%0ABooking Ref: ${booking.bookingReference}%0APrice: ${booking.price}%0A%0A⚠️ CHECK-IN REMINDER:%0A• Check-in opens 24hrs before%0A• Arrive 2hrs early%0A• Bring valid ID`;
             const location = `${booking.origin} Airport`;
@@ -737,7 +748,7 @@
         // Share flight details (replaces broken mailto)
         function emailReminder(booking) {
             const flightDate = booking.flightDate || booking.bookingDate || 'TBA';
-            const displayDate = new Date(flightDate).toLocaleDateString('en-NG', {
+            const displayDate = parseLocalDate(flightDate).toLocaleDateString('en-NG', {
                 weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
             });
             
@@ -831,7 +842,7 @@ PRE-FLIGHT CHECKLIST:
                     <div class="trip-details">
                         <div class="trip-detail-item">
                             <span class="trip-detail-label">Flight Date</span>
-                            <span class="trip-detail-value">${new Date(displayDate).toLocaleDateString('en-NG', {weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'})}</span>
+                            <span class="trip-detail-value">${parseLocalDate(displayDate).toLocaleDateString('en-NG', {weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'})}</span>
                         </div>
                         <div class="trip-detail-item">
                             <span class="trip-detail-label">Booking Ref</span>
