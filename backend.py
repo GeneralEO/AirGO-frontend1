@@ -383,6 +383,17 @@ async def send_booking_confirmation_email(booking: BookingRequest):
         return False
     
     try:
+        # Format the travel date for the email (e.g. "Monday, 15 June 2026").
+        # Falls back gracefully if flight_date is missing or not ISO-formatted.
+        flight_date_display = "To be advised"
+        if booking.flight_date:
+            try:
+                flight_date_display = datetime.strptime(
+                    booking.flight_date[:10], "%Y-%m-%d"
+                ).strftime("%A, %d %B %Y")
+            except ValueError:
+                flight_date_display = booking.flight_date
+
         email_html = f"""
         <!DOCTYPE html>
         <html>
@@ -426,7 +437,11 @@ async def send_booking_confirmation_email(booking: BookingRequest):
                             <span class="detail-value">{booking.origin} → {booking.destination}</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Departure</span>
+                            <span class="detail-label">Flight Date</span>
+                            <span class="detail-value">{flight_date_display}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Departure Time</span>
                             <span class="detail-value">{booking.departure_time}</span>
                         </div>
                         <div class="detail-row">
