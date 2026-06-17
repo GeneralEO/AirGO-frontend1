@@ -1021,9 +1021,68 @@ async def get_my_bookings(authorization: str = Header(None)):
                 return {"bookings": bookings}
         
         return {"bookings": []}
-        
+
     except Exception as e:
         print(f"Get bookings error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# USER SETTINGS (account-synced, requires auth)
+# ============================================
+
+class SettingsPayload(BaseModel):
+    settings: dict
+
+
+@app.get("/api/settings")
+async def get_settings(authorization: str = Header(None)):
+    """Return the signed-in user's saved settings (empty object if none)."""
+    user_info = await verify_clerk_token(authorization)
+    if not supabase:
+        return {"settings": {}}
+    try:
+        ures = supabase.table("users").select("id").eq(
+            "clerk_user_id", user_info["user_id"]
+        ).execute()
+        if not ures.data:
+            return {"settings": {}}
+        user_db_id = ures.data[0]["id"]
+        sres = supabase.table("user_settings").select("settings").eq(
+            "user_id", user_db_id
+        ).execute()
+        if sres.data:
+            return {"settings": sres.data[0].get("settings") or {}}
+        return {"settings": {}}
+    except Exception as e:
+        print(f"Get settings error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/settings")
+async def save_settings(payload: SettingsPayload, authorization: str = Header(None)):
+    """Upsert the signed-in user's settings, keyed by their account."""
+    user_info = await verify_clerk_token(authorization)
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
+    try:
+        # Ensure a user row exists (covers users who signed in but never booked)
+        user = await resolve_user(
+            user_info["user_id"],
+            user_info.get("email"),
+            user_info.get("name"),
+        )
+        if not user:
+            raise HTTPException(status_code=500, detail="Could not resolve user")
+        row = {"user_id": user["id"], "settings": payload.settings}
+        res = supabase.table("user_settings").upsert(
+            row, on_conflict="user_id"
+        ).execute()
+        return {"success": True, "saved": bool(res.data)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Save settings error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
  
 

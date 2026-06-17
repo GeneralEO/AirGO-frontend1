@@ -706,9 +706,16 @@
             });
         });
 
-        // Load settings from localStorage
+        // Load settings from localStorage (instant), then refresh from the
+        // account if signed in (see loadSettingsFromBackend, called by Clerk).
         function loadSettings() {
             const settings = JSON.parse(localStorage.getItem('airgo_settings') || '{}');
+            applySettings(settings);
+        }
+
+        // Populate the form from a settings object
+        function applySettings(settings) {
+            if (!settings) return;
 
             // Personal info
             if (settings.fullName) document.getElementById('fullName').value = settings.fullName;
@@ -719,7 +726,8 @@
             // Preferences
             if (settings.seatPref) document.getElementById('seatPref').value = settings.seatPref;
 
-            // Airlines
+            // Airlines (clear first so a backend refresh fully replaces state)
+            document.querySelectorAll('#airlinePrefs .chip.active').forEach(c => c.classList.remove('active'));
             if (settings.airlines) {
                 settings.airlines.forEach(airline => {
                     const chip = document.querySelector(`[data-airline="${airline}"]`);
@@ -727,7 +735,8 @@
                 });
             }
 
-            // Routes
+            // Routes (clear first)
+            document.querySelectorAll('#routePrefs .chip.active').forEach(c => c.classList.remove('active'));
             if (settings.routes) {
                 settings.routes.forEach(route => {
                     const chip = document.querySelector(`[data-route="${route}"]`);
@@ -777,7 +786,11 @@
                 personalizedRecs: document.getElementById('personalizedRecs').classList.contains('active')
             };
 
+            // Always cache locally (instant + offline + guest fallback)
             localStorage.setItem('airgo_settings', JSON.stringify(settings));
+
+            // If signed in, also persist to the account so it syncs across devices
+            saveSettingsToBackend(settings);
 
             // Show success message
             const successMsg = document.getElementById('successMessage');
@@ -788,6 +801,51 @@
 
             // Update reward perks
             updateRewardPerks(settings);
+        }
+
+        // ---- Account sync (backend) ----
+        const SETTINGS_BACKEND_URL = 'https://airgo-backend1.onrender.com';
+
+        async function getAuthToken() {
+            if (window.__clerk && window.__clerk.session) {
+                return await window.__clerk.session.getToken();
+            }
+            return null;
+        }
+
+        async function saveSettingsToBackend(settings) {
+            const token = await getAuthToken();
+            if (!token) return; // guest / not signed in — localStorage only
+            try {
+                await fetch(`${SETTINGS_BACKEND_URL}/api/settings`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ settings })
+                });
+            } catch (e) {
+                console.warn('Could not sync settings to account:', e);
+            }
+        }
+
+        async function loadSettingsFromBackend() {
+            const token = await getAuthToken();
+            if (!token) return; // guest — keep whatever localStorage loaded
+            try {
+                const res = await fetch(`${SETTINGS_BACKEND_URL}/api/settings`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.settings && Object.keys(data.settings).length > 0) {
+                    applySettings(data.settings);
+                    localStorage.setItem('airgo_settings', JSON.stringify(data.settings));
+                }
+            } catch (e) {
+                console.warn('Could not load settings from account:', e);
+            }
         }
 
         // Update reward perks based on settings completion
@@ -861,6 +919,8 @@
                 await clerk.load();
                 window.__clerk = clerk;
                 updateAuthUI(clerk);
+                // Signed in? Pull account settings (overrides the localStorage cache)
+                if (clerk.user) loadSettingsFromBackend();
                 clerk.addListener(() => updateAuthUI(clerk));
             } catch (e) {
                 console.warn('Clerk init failed:', e);
