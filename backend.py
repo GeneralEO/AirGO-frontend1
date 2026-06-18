@@ -1059,6 +1059,40 @@ async def get_settings(authorization: str = Header(None)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+async def get_or_link_user_by_clerk(clerk_user_id: str, email: str = None,
+                                    full_name: str = None, phone: str = None):
+    """
+    Find the user by Clerk id; if missing, link an existing row that matches
+    the email (stamping the clerk_user_id onto it), else create a new row.
+    Clerk session tokens don't carry email, so email/name come from the
+    settings payload as a fallback. Stamping clerk_user_id keeps GET-by-clerk
+    consistent and also attaches past guest bookings on the same email.
+    """
+    if not supabase:
+        return None
+    # 1. Already linked to this Clerk account
+    res = supabase.table("users").select("*").eq("clerk_user_id", clerk_user_id).execute()
+    if res.data:
+        return res.data[0]
+    # 2. Existing row with the same email -> link it to this Clerk account
+    if email:
+        res = supabase.table("users").select("*").eq("email", email).execute()
+        if res.data:
+            row = res.data[0]
+            supabase.table("users").update(
+                {"clerk_user_id": clerk_user_id}
+            ).eq("id", row["id"]).execute()
+            return row
+    # 3. Create a fresh row for this Clerk account
+    res = supabase.table("users").insert({
+        "clerk_user_id": clerk_user_id,
+        "email": email,
+        "full_name": full_name,
+        "phone": phone,
+    }).execute()
+    return res.data[0] if res.data else None
+
+
 @app.post("/api/settings")
 async def save_settings(payload: SettingsPayload, authorization: str = Header(None)):
     """Upsert the signed-in user's settings, keyed by their account."""
@@ -1066,15 +1100,18 @@ async def save_settings(payload: SettingsPayload, authorization: str = Header(No
     if not supabase:
         raise HTTPException(status_code=503, detail="Database not configured")
     try:
-        # Ensure a user row exists (covers users who signed in but never booked)
-        user = await resolve_user(
-            user_info["user_id"],
-            user_info.get("email"),
-            user_info.get("name"),
+        settings = payload.settings or {}
+        # Clerk session tokens have no email/name -> fall back to the form fields
+        email = user_info.get("email") or settings.get("email") or None
+        name = user_info.get("name") or settings.get("fullName") or None
+        phone = settings.get("phone") or None
+
+        user = await get_or_link_user_by_clerk(
+            user_info["user_id"], email, name, phone
         )
         if not user:
             raise HTTPException(status_code=500, detail="Could not resolve user")
-        row = {"user_id": user["id"], "settings": payload.settings}
+        row = {"user_id": user["id"], "settings": settings}
         res = supabase.table("user_settings").upsert(
             row, on_conflict="user_id"
         ).execute()
