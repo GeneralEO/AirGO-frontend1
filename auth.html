@@ -320,7 +320,7 @@
     </div>
 
     <!-- Clerk JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js" data-clerk-publishable-key="pk_live_Y2xlcmsuYm9va2FpcmdvLm9ubGluZSQ"></script>
 
     <!-- Starfield canvas -->
     <script>
@@ -378,7 +378,7 @@
 
             let clerk;
             try {
-                clerk = new window.Clerk(CLERK_PUBLISHABLE_KEY);
+                clerk = window.Clerk;
                 await clerk.load();
             } catch (e) {
                 document.getElementById('loading-spinner').innerHTML =

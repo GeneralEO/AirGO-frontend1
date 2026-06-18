@@ -875,7 +875,7 @@
     </script>
 
     <!-- Clerk JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js" data-clerk-publishable-key="pk_live_Y2xlcmsuYm9va2FpcmdvLm9ubGluZSQ"></script>
     <script>
         const CLERK_PUBLISHABLE_KEY = 'pk_live_Y2xlcmsuYm9va2FpcmdvLm9ubGluZSQ';
 
@@ -915,7 +915,7 @@
         async function initClerk() {
             if (!window.Clerk || CLERK_PUBLISHABLE_KEY === 'YOUR_CLERK_PUBLISHABLE_KEY') return;
             try {
-                const clerk = new window.Clerk(CLERK_PUBLISHABLE_KEY);
+                const clerk = window.Clerk;
                 await clerk.load();
                 window.__clerk = clerk;
                 updateAuthUI(clerk);
